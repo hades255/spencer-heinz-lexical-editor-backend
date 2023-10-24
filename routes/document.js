@@ -266,6 +266,10 @@ const documentRouter = (fastify, opts, done) => {
                     creator: request.user._id,
                 }).save();
 
+                const protocol = req.protocol;
+                const ip = req.ip;
+                const port = req.raw.connection.remotePort;
+
                 for (let contributor of contributors) {
                     if (contributor.status === USER_STATUS.INVITED) {
                         const token = generateSecretString(
@@ -283,11 +287,7 @@ const documentRouter = (fastify, opts, done) => {
                             from: process.env.SERVER_MAIL_ADDRESS,
                             to: contributor.email,
                             subject: `${request.user.name} invited you to his document.`,
-                            text: `${newDoc.name} <br/> ${
-                                newDoc.description
-                            } <br/> <a href="${
-                                request.protocol + '://' + request.hostname
-                            }/invites/${token}">Click HERE</a>`,
+                            text: `${newDoc.name} <br/> ${newDoc.description} <br/> <a href="${protocol}://${ip}:${port}/invites/${token}">Click HERE</a>`,
                         });
                     } else {
                         NotificationModel({

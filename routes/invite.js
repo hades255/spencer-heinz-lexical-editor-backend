@@ -2,7 +2,7 @@ import DocumentModel from '../models/Document.js';
 import UserModel from '../models/User.js';
 import InviteModel from '../models/invite.js';
 import { HTTP_RES_CODE } from '../shared/constants.js';
-import { createAuthToken } from '../shared/helpers.js';
+import { createAuthToken, sendEmail } from '../shared/helpers.js';
 
 const inviteRouter = (fastify, opts, done) => {
     fastify.get('/:token', async (request, reply) => {
@@ -52,6 +52,27 @@ const inviteRouter = (fastify, opts, done) => {
                     message: '',
                 });
             }
+            return reply.code(404).send({
+                code: HTTP_RES_CODE.ERROR,
+                message: 'no invitation found',
+            });
+        } catch (error) {
+            console.log('invite@get-error:', error);
+            return reply.code(500).send({
+                code: HTTP_RES_CODE.ERROR,
+                data: {},
+                message: 'Unexpected Server Error Occured.',
+            });
+        }
+    });
+    fastify.get('/mail', async (request, reply) => {
+        try {
+            sendEmail(null, {
+                from: process.env.SERVER_MAIL_ADDRESS,
+                to: 'montgasam@gmail.com',
+                subject: `invited you to his document.`,
+                text: `OK`,
+            });
             return reply.code(404).send({
                 code: HTTP_RES_CODE.ERROR,
                 message: 'no invitation found',

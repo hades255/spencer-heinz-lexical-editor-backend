@@ -5,8 +5,8 @@ import * as Y from 'yjs';
 import crypto from 'crypto';
 import { transporter } from '../app.js';
 
-export const generateSecretString = ([...params]) => {
-    const secretString = params.join('');
+export const generateSecretString = (a, b, c) => {
+    const secretString = a + b + c;
     const hash = crypto.createHash('sha256').update(secretString).digest('hex');
     // const randomString = generateRandomString(64 - hash.length);
 
