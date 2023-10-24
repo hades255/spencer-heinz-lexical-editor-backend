@@ -17,13 +17,15 @@ import fastifyCookie from '@fastify/cookie';
 import fastifySession from '@fastify/session';
 import { Authenticator } from '@fastify/passport';
 
-import fastifyMailer from 'fastify-mailer';
+// import fastifyMailer from 'fastify-mailer';
+import nodemailer from 'nodemailer';
 // models
 
 // routes
 import documentRouter from './routes/document.js';
 import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
+import inviteRouter from './routes/invite.js';
 import notificationRouter from './routes/notification.js';
 
 import { initializeAuthSystem } from './middlewares/authentication.js';
@@ -62,20 +64,30 @@ fastify.register(fastifyWebSocket, {
     connectionOptions: { readableObjectMode: true }, // can include other duplex options
 });
 
-fastify.register(fastifyMailer, {
-    defaults: {
-        from: process.env.SERVER_MAIL_ADDRESS || '',
-    },
-    transport: {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: process.env.SERVER_MAIL_ADDRESS || '',
-            pass: process.env.SERVER_MAIL_PASSWORD || '',
-        },
+// fastify.register(fastifyMailer, {
+//     defaults: {
+//         from: process.env.SERVER_MAIL_ADDRESS || '',
+//     },
+//     transport: {
+//         service: process.env.SERVER_MAIL_SERVICE || '',
+//         // host: '',
+//         // port: 465,
+//         // secure: true,
+//         auth: {
+//             user: process.env.SERVER_MAIL_ADDRESS || '',
+//             pass: process.env.SERVER_MAIL_PASSWORD || '',
+//         },
+//     },
+// });
+
+export const transporter = nodemailer.createTransport({
+    service: process.env.SERVER_MAIL_SERVICE || '',
+    auth: {
+        user: process.env.SERVER_MAIL_ADDRESS || '',
+        pass: process.env.SERVER_MAIL_PASSWORD || '',
     },
 });
+
 // create decorator
 fastify.decorate('appData', {
     rooms: new Map(),
@@ -185,6 +197,7 @@ fastify.get('/websocket', { websocket: true }, (connection, req) => {
 // register route plugins
 fastify.register(authRouter, { prefix: '/auth' });
 fastify.register(userRouter, { prefix: '/user' });
+fastify.register(inviteRouter, { prefix: '/invite' });
 fastify.register(documentRouter, { prefix: '/document' });
 fastify.register(notificationRouter, { prefix: '/notification' });
 

@@ -3,13 +3,14 @@ import { JWT_SECRET_KEY } from '../conf.js';
 import * as Y from 'yjs';
 
 import crypto from 'crypto';
+import { transporter } from '../app.js';
 
 export const generateSecretString = ([...params]) => {
     const secretString = params.join('');
     const hash = crypto.createHash('sha256').update(secretString).digest('hex');
-    const randomString = generateRandomString(64 - hash.length);
+    // const randomString = generateRandomString(64 - hash.length);
 
-    return hash + randomString;
+    return hash;
 };
 
 const generateRandomString = (length) => {
@@ -59,10 +60,15 @@ export const getDocNameByYDoc = (rooms, doc) => {
 };
 
 export const sendEmail = async (fastify, mail) => {
-    const { mailer } = fastify;
+    // const { mailer } = fastify;
 
     try {
-        await mailer.sendMail(mail);
+        console.log(mail);
+        // await mailer.sendMail(mail);
+        await transporter.sendMail({
+            ...mail,
+            from: process.env.SERVER_MAIL_ADDRESS,
+        });
 
         console.log('Email sent successfully!');
     } catch (error) {

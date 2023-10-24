@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { JWT_SECRET_KEY } from '../conf.js';
 import NotificationModel from '../models/Notification.js';
 import InviteModel from '../models/invite.js';
-import { sendEmail } from '../shared/helpers.js';
+import { generateSecretString, sendEmail } from '../shared/helpers.js';
 
 const documentRouter = (fastify, opts, done) => {
     /**
@@ -269,22 +269,25 @@ const documentRouter = (fastify, opts, done) => {
                 for (let contributor of contributors) {
                     if (contributor.status === USER_STATUS.INVITED) {
                         const token = generateSecretString(
-                            req.me.email,
+                            request.user.email,
                             contributor.email,
                             newDoc._id,
                         );
                         InviteModel({
-                            creator: req.me,
+                            creator: request.user,
                             contributor,
                             document: newDoc,
                             token,
                         }).save();
                         sendEmail(fastify, {
+                            from: process.env.SERVER_MAIL_ADDRESS,
                             to: contributor.email,
-                            subject: `${req.me.name} invited you to his document.`,
+                            subject: `${request.user.name} invited you to his document.`,
                             text: `${newDoc.name} <br/> ${
                                 newDoc.description
-                            } <br/> <a href="${fastify.server.address()}/invites/${token}">Click HERE</a>`,
+                            } <br/> <a href="${
+                                request.protocol + '://' + request.hostname
+                            }/invites/${token}">Click HERE</a>`,
                         });
                     } else {
                         NotificationModel({
@@ -296,7 +299,10 @@ const documentRouter = (fastify, opts, done) => {
                                     text: request.user.name,
                                     variant: 'subtitle1',
                                 },
-                                { text: ' invited to join ', variant: '' },
+                                {
+                                    text: ' invited to join document - ',
+                                    variant: '',
+                                },
                                 { text: newDoc.name, variant: 'subtitle1' },
                             ],
                         }).save();
@@ -378,11 +384,13 @@ const documentRouter = (fastify, opts, done) => {
                     doc.invites = doc.invites.map((invite) => ({
                         ...invite,
                         status:
-                            invite._id.toString() === request.user.toString()
+                            invite._id.toString() ===
+                            request.user._id.toString()
                                 ? status
                                 : invite.status,
                         date:
-                            invite._id.toString() === request.user.toString()
+                            invite._id.toString() ===
+                            request.user._id.toString()
                                 ? new Date()
                                 : invite.date,
                     }));
