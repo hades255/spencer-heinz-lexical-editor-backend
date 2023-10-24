@@ -1,0 +1,46 @@
+{
+    "name": "lexical-server",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "license": "MIT",
+    "dependencies": {
+        "@fastify/cookie": "^8.3.0",
+        "@fastify/cors": "8.3.0",
+        "@fastify/jwt": "^7.2.0",
+        "@fastify/passport": "^2.3.0",
+        "@fastify/session": "^10.4.0",
+        "@fastify/websocket": "^8.2.0",
+        "bcrypt": "^5.1.0",
+        "dotenv": "^16.3.1",
+        "fastify": "^4.21.0",
+        "fastify-cors": "^6.1.0",
+        "fastify-mailer": "^2.3.1",
+        "jsonwebtoken": "^9.0.1",
+        "lib0": "^0.2.78",
+        "lodash": "^4.17.21",
+        "mongoose": "^7.4.1",
+        "nodemailer": "^6.9.7",
+        "nodemon": "^3.0.1",
+        "passport-jwt": "^4.0.1",
+        "passport-local": "^1.0.0",
+        "uuid": "^9.0.0",
+        "ws": "^8.14.2",
+        "y-leveldb": "^0.1.2",
+        "y-protocols": "^1.0.5",
+        "yjs": "^13.6.7",
+        "yjs-server": "^0.2.3"
+    },
+    "scripts": {
+        "dev": "nodemon server.js",
+        "pretty": "prettier --check .",
+        "format:write": "prettier --write .",
+        "lint:check": "eslint .",
+        "lint:fix": "eslint --fix ."
+    },
+    "devDependencies": {
+        "eslint": "^8.46.0",
+        "eslint-config-prettier": "^8.9.0",
+        "prettier": "^3.0.0"
+    }
+}
