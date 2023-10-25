@@ -1,4 +1,5 @@
 import { fastifyPassport } from '../app.js';
+import MessageModel from '../models/Message.js';
 import NotificationModel from '../models/Notification.js';
 import { HTTP_RES_CODE, NOTIFICATION_STATUS } from '../shared/constants.js';
 
@@ -91,28 +92,40 @@ const notificationRouter = (fastify, opts, done) => {
         },
     );
     fastify.get('/socket', { websocket: true }, (connection, req) => {
-        let user = '';
+        let user = null;
         connection.socket.on('message', (message) => {
             // Handle incoming messages from the client
-            user = message.toString();
+            user = JSON.parse(message.toString());
         });
 
         connection.socket.on('close', () => {
-            user = '';
+            user = null;
         });
 
         const notificationTimer = async () => {
             try {
                 if (connection.socket.readyState === connection.socket.OPEN) {
                     setTimeout(notificationTimer, 3000);
+                    if (!user) return;
                     const notifications = await NotificationModel.find({
-                        $or: [{ to: { $eq: '' } }, { to: { $eq: user } }],
+                        $or: [{ to: { $eq: '' } }, { to: { $eq: user._id } }],
                         // status: NOTIFICATION_STATUS.UNREAD,
                     })
                         .sort({ createdAt: -1 })
                         .exec();
-                    if (notifications.length)
-                        connection.socket.send(JSON.stringify(notifications));
+                    const messages = await MessageModel.find({
+                        $or: [
+                            { to: { $eq: '' } },
+                            { to: { $eq: user._id } },
+                            { to: { $eq: user.role } },
+                        ],
+                        // status: NOTIFICATION_STATUS.UNREAD,
+                    })
+                        .sort({ createdAt: -1 })
+                        .exec();
+                    connection.socket.send(
+                        JSON.stringify({ notifications, messages }),
+                    );
                 }
             } catch (error) {
                 console.log(error);

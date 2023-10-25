@@ -17,7 +17,6 @@ import fastifyCookie from '@fastify/cookie';
 import fastifySession from '@fastify/session';
 import { Authenticator } from '@fastify/passport';
 
-// import fastifyMailer from 'fastify-mailer';
 import nodemailer from 'nodemailer';
 // models
 
@@ -63,22 +62,6 @@ fastify.register(fastifyWebSocket, {
     options: { maxPayload: 1048576 },
     connectionOptions: { readableObjectMode: true }, // can include other duplex options
 });
-
-// fastify.register(fastifyMailer, {
-//     defaults: {
-//         from: process.env.SERVER_MAIL_ADDRESS || '',
-//     },
-//     transport: {
-//         service: process.env.SERVER_MAIL_SERVICE || '',
-//         // host: '',
-//         // port: 465,
-//         // secure: true,
-//         auth: {
-//             user: process.env.SERVER_MAIL_ADDRESS || '',
-//             pass: process.env.SERVER_MAIL_PASSWORD || '',
-//         },
-//     },
-// });
 
 export const transporter = nodemailer.createTransport({
     service: process.env.SERVER_MAIL_SERVICE || '',
@@ -174,26 +157,6 @@ export const YjsServer = createYjsServer({
     },
 });
 
-fastify.get('/websocket', { websocket: true }, (connection, req) => {
-    connection.socket.on('message', (message) => {
-        // Handle incoming messages
-        console.log(message);
-    });
-
-    connection.socket.on('close', () => {
-        // Handle connection close
-    });
-
-    // Access the socket.id
-    const socketId = connection.socket.id;
-    console.log(connection.socket);
-    addUser(connection.socket);
-    // Use the socketId to separate connections or perform any other logic
-
-    // Send a message to the client
-    connection.socket.emit('Hello, client!');
-});
-
 // register route plugins
 fastify.register(authRouter, { prefix: '/auth' });
 fastify.register(userRouter, { prefix: '/user' });
@@ -203,7 +166,7 @@ fastify.register(notificationRouter, { prefix: '/notification' });
 
 const startApp = async () => {
     try {
-        await fastify.listen(PORT, '0.0.0.0');
+        fastify.listen(PORT, '0.0.0.0');
     } catch (err) {
         fastify.log.error(err);
         // eslint-disable-next-line no-undef

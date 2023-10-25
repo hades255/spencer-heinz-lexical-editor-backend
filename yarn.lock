@@ -768,10 +768,18 @@ fastify-plugin@^3.0.0, fastify-plugin@^3.0.1:
   resolved "https://registry.npmjs.org/fastify-plugin/-/fastify-plugin-3.0.1.tgz"
   integrity sha512-qKcDXmuZadJqdTm6vlCqioEbyewF60b/0LOFCcYN1B6BIZGlYJumWWOYs70SFYLDAH4YqdE1cxH/RKMG7rFxgA==
 
-fastify-plugin@^4.0.0:
+fastify-plugin@^4.0.0, fastify-plugin@^4.5.1:
   version "4.5.1"
   resolved "https://registry.npmjs.org/fastify-plugin/-/fastify-plugin-4.5.1.tgz"
   integrity sha512-stRHYGeuqpEZTL1Ef0Ovr2ltazUT9g844X5z/zEBFLG8RYlpDiOCIG+ATvYEp+/zmc7sN29mcIMp8gvYplYPIQ==
+
+fastify-socket.io@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/fastify-socket.io/-/fastify-socket.io-5.0.0.tgz#7040d32a777a733b748b63ad0428b596a91b8865"
+  integrity sha512-BQKGLVSsLn9s4IXLWjwZRGTNuFbXt5bPY2qeXJUFYFtu/0BxLqcE2WMOrWUZdFWy12kuEvXC76ObsilQKeSfqg==
+  dependencies:
+    fastify-plugin "^4.5.1"
+    tslib "^2.6.1"
 
 fastify@^4.21.0:
   version "4.21.0"
@@ -1914,6 +1922,11 @@ tr46@~0.0.3:
   version "0.0.3"
   resolved "https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
+
+tslib@^2.6.1:
+  version "2.6.2"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.2.tgz#703ac29425e7b37cd6fd456e92404d46d1f3e4ae"
+  integrity sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==
 
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"

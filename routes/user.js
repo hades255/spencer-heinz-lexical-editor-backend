@@ -1,5 +1,10 @@
 import { fastifyPassport } from '../app.js';
-import { HTTP_RES_CODE, NOTIFICATION_TYPES, USER_ROLES } from '../shared/constants.js';
+import {
+    HTTP_RES_CODE,
+    NOTIFICATION_TYPES,
+    USER_ROLES,
+    USER_STATUS,
+} from '../shared/constants.js';
 import UserModel from '../models/User.js';
 import mongoose from 'mongoose';
 import { getUsers } from '../socket/index.js';
@@ -136,13 +141,13 @@ const userRouter = (fastify, opts, done) => {
                 const { userId, status, comment } = request.body;
                 let data = {};
                 switch (status) {
-                    case 'active':
+                    case USER_STATUS.ACTIVE:
                         data.approvedAt = new Date();
                         break;
-                    case 'locked':
+                    case USER_STATUS.LOCKED:
                         data.lockedAt = new Date();
                         break;
-                    case 'deleted':
+                    case USER_STATUS.DELETED:
                         data.deletedAt = new Date();
                         break;
                     default:

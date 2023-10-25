@@ -16,6 +16,7 @@
         "fastify": "^4.21.0",
         "fastify-cors": "^6.1.0",
         "fastify-mailer": "^2.3.1",
+        "fastify-socket.io": "^5.0.0",
         "jsonwebtoken": "^9.0.1",
         "lib0": "^0.2.78",
         "lodash": "^4.17.21",

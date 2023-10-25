@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
-import { DOCUMENT_STATUS } from '../shared/constants.js';
+import {
+    DOCUMENT_STATUS,
+    USER_ROLES,
+    USER_STATUS,
+} from '../shared/constants.js';
 
 const Schema = mongoose.Schema;
 
@@ -63,7 +67,25 @@ const DocumentSchema = new Schema(
                     type: String,
                     default: '',
                 },
-                status: { type: String, default: 'pending' },
+                status: { type: String, default: USER_STATUS.PENDING },
+                invitor: {
+                    _id: {
+                        type: String,
+                        default: '',
+                    },
+                    name: {
+                        type: String,
+                        default: '',
+                    },
+                    email: {
+                        type: String,
+                        default: '',
+                    },
+                    avatar: {
+                        type: String,
+                        default: '',
+                    },
+                },
             },
         ],
         initialText: {

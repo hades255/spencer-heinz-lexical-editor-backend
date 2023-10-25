@@ -13,7 +13,7 @@ export const generateSecretString = (a, b, c) => {
     return hash;
 };
 
-const generateRandomString = (length) => {
+export const generateRandomString = (length) => {
     const characters =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let randomString = '';
@@ -24,6 +24,21 @@ const generateRandomString = (length) => {
     }
 
     return randomString;
+};
+
+export const nameSentence = (names) => {
+    switch (names.length) {
+        case 0:
+            return '';
+        case 1:
+            return names[0];
+        case 2:
+            return names[0] + ', ' + names[1];
+        case 3:
+            return names[0] + ', ' + names[1] + ' and ' + names[2];
+        default:
+            return names[0] + ', ' + names[1] + ' and ' + (names.length - 2);
+    }
 };
 
 export const createAuthToken = (user, expireTime = '1d') => {
@@ -59,17 +74,9 @@ export const getDocNameByYDoc = (rooms, doc) => {
     return false;
 };
 
-export const sendEmail = async (fastify, mail) => {
-    // const { mailer } = fastify;
-
+export const sendEmail = async (mail) => {
     try {
-        console.log(mail);
-        // await mailer.sendMail(mail);
-        await transporter.sendMail({
-            ...mail,
-            from: process.env.SERVER_MAIL_ADDRESS,
-        });
-
+        await transporter.sendMail(mail);
         console.log('Email sent successfully!');
     } catch (error) {
         console.error('Email Error: ', error);

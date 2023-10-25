@@ -21,7 +21,7 @@ const NotificationSchema = new Schema(
         redirect: { type: String, default: '' },
         data: [
             {
-                text: { type: String, required: true },
+                text: { type: String, required: '' },
                 variant: { type: String, default: '' },
             },
         ],

@@ -23,7 +23,7 @@ export const NOTIFICATION_STATUS = {
 
 export const USER_STATUS = {
     PENDING: 'pending',
-    Active: 'active',
+    ACTIVE: 'active',
     LOCKED: 'locked',
     DELETED: 'deleted',
     INVITED: 'invited',
@@ -44,4 +44,8 @@ export const NOTIFICATION_TYPES = {
     USER_SETTING_ROLE: '@user/setting/role',
     USER_SETTING_STATUS: '@user/setting/status',
     USER_RESET_PASSWORD: '@user/reset/password',
+};
+
+export const MESSAGE_TYPES = {
+    DOCUMENT_INVITE_RESOLVE: '@document/invite/resolve/nonactive-users',
 };

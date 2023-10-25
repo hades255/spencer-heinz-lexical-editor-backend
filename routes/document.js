@@ -2,8 +2,8 @@ import jwt from 'jsonwebtoken';
 import { YjsServer, fastifyPassport } from '../app.js';
 import DocumentModel from '../models/Document.js';
 import {
-    DOCUMENT_STATUS,
     HTTP_RES_CODE,
+    MESSAGE_TYPES,
     NOTIFICATION_STATUS,
     NOTIFICATION_TYPES,
     USER_STATUS,
@@ -12,7 +12,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { JWT_SECRET_KEY } from '../conf.js';
 import NotificationModel from '../models/Notification.js';
 import InviteModel from '../models/invite.js';
-import { generateSecretString, sendEmail } from '../shared/helpers.js';
+import {
+    generateSecretString,
+    nameSentence,
+    sendEmail,
+} from '../shared/helpers.js';
+import MessageModel from '../models/Message.js';
 
 const documentRouter = (fastify, opts, done) => {
     /**
@@ -266,64 +271,86 @@ const documentRouter = (fastify, opts, done) => {
                     creator: request.user._id,
                 }).save();
 
-                const protocol = req.protocol;
-                const ip = req.ip;
-                const port = req.raw.connection.remotePort;
+                if (contributors.length) {
+                    const protocol = request.protocol;
+                    const ip = request.ip;
+                    const port = request.raw.connection.remotePort;
+                    let nonActiveUsers = [];
+                    for (let contributor of contributors) {
+                        if (contributor.status === USER_STATUS.INVITED) {
+                            const token = generateSecretString(
+                                request.user.email,
+                                contributor.email,
+                                newDoc._id,
+                            );
+                            InviteModel({
+                                creator: request.user,
+                                contributor,
+                                document: newDoc,
+                                token,
+                            }).save();
+                            setTimeout(() => {
+                                sendEmail({
+                                    from: process.env.SERVER_MAIL_ADDRESS,
+                                    to: contributor.email,
+                                    subject: `${request.user.name} invited you to his document.`,
+                                    text: `Title: ${newDoc.name} <br/> Description: ${newDoc.description} <br/> <a href="${protocol}://${ip}:${port}/invites/${token}">Click HERE</a> to contribute!`,
+                                });
+                            }, 100);
+                        } else {
+                            if (contributor.status !== USER_STATUS.ACTIVE) {
+                                nonActiveUsers.push(contributor);
+                            }
+                            NotificationModel({
+                                to: contributor._id,
+                                type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
+                                redirect: '/document/' + newDoc._id,
+                                data: [
+                                    {
+                                        text: request.user.name,
+                                        variant: 'subtitle1',
+                                    },
+                                    {
+                                        text: ' invited you to join document - ',
+                                        variant: '',
+                                    },
+                                    { text: newDoc.name, variant: 'subtitle1' },
+                                ],
+                            }).save();
+                        }
+                    }
+                    NotificationModel({
+                        to: request.user._id,
+                        type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
+                        status: NOTIFICATION_STATUS.UNREAD,
+                        data: [
+                            { text: 'You', variant: 'subtitle1' },
+                            { text: ' invited ' },
+                            {
+                                text: nameSentence(
+                                    contributors.map((item) => item.name),
+                                ),
+                                variant: 'subtitle1',
+                            },
+                            { text: ' other clients. Wait for the response' },
+                        ],
+                    }).save();
 
-                for (let contributor of contributors) {
-                    if (contributor.status === USER_STATUS.INVITED) {
-                        const token = generateSecretString(
-                            request.user.email,
-                            contributor.email,
-                            newDoc._id,
-                        );
-                        InviteModel({
-                            creator: request.user,
-                            contributor,
-                            document: newDoc,
-                            token,
-                        }).save();
-                        sendEmail(fastify, {
-                            from: process.env.SERVER_MAIL_ADDRESS,
-                            to: contributor.email,
-                            subject: `${request.user.name} invited you to his document.`,
-                            text: `${newDoc.name} <br/> ${newDoc.description} <br/> <a href="${protocol}://${ip}:${port}/invites/${token}">Click HERE</a>`,
-                        });
-                    } else {
-                        NotificationModel({
-                            to: contributor._id,
-                            type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
-                            redirect: '/document/' + newDoc._id,
+                    if (nonActiveUsers.length) {
+                        MessageModel({
+                            from: request.user,
+                            to: 'admin',
                             data: [
+                                { text: 'I', variant: 'subtitle1' },
                                 {
-                                    text: request.user.name,
-                                    variant: 'subtitle1',
+                                    text: ' invited some contributors who are not active now. Please resolve this.',
                                 },
-                                {
-                                    text: ' invited to join document - ',
-                                    variant: '',
-                                },
-                                { text: newDoc.name, variant: 'subtitle1' },
                             ],
+                            type: MESSAGE_TYPES.DOCUMENT_INVITE_RESOLVE,
+                            attachment: JSON.stringify(nonActiveUsers),
                         }).save();
                     }
                 }
-                NotificationModel({
-                    to: request.user._id,
-                    type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
-                    status: NOTIFICATION_STATUS.UNREAD,
-                    data: [
-                        { text: 'You', variant: 'subtitle1' },
-                        { text: ' invited ' },
-                        {
-                            text: contributors
-                                .map((item) => item.name)
-                                .join(', '),
-                            variant: 'subtitle1',
-                        },
-                        { text: '. Wait for the response' },
-                    ],
-                }).save();
 
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,

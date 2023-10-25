@@ -1,56 +1,57 @@
 import mongoose from 'mongoose';
-import { Message_STATUS } from '../shared/constants.js';
+import {
+    NOTIFICATION_STATUS,
+    USER_ROLES,
+    USER_STATUS,
+} from '../shared/constants.js';
 
 const Schema = mongoose.Schema;
 
 const MessageSchema = new Schema(
     {
-        name: {
+        from: {
+            _id: {
+                type: String,
+                default: '',
+            },
+            name: {
+                type: String,
+                default: '',
+            },
+            email: {
+                type: String,
+                default: '',
+            },
+            avatar: {
+                type: String,
+                default: '',
+            },
+            status: { type: String, default: USER_STATUS.PENDING },
+            role: { type: String, default: USER_ROLES.CONTRIBUTOR },
+        },
+        to: {
+            type: String,
+            default: '',
+        },
+        type: {
             type: String,
             required: true,
         },
-        description: {
-            type: String,
-            required: false,
-            default: '',
-        },
-        creator: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            populate: {
-                path: 'creator',
-                select: '_id name email avatar role status',
-            },
-        },
-        contributors: [
-            {
-                _id: {
-                    type: String,
-                    default: '',
-                },
-                name: {
-                    type: String,
-                    default: '',
-                },
-                email: {
-                    type: String,
-                    default: '',
-                },
-                avatar: {
-                    type: String,
-                    default: '',
-                },
-            },
-        ],
-        initialText: {
-            type: String,
-            required: false,
-            default: '',
-        },
         status: {
             type: String,
-            enum: Object.values(Message_STATUS),
-            default: Message_STATUS.EDITING,
+            enum: Object.values(NOTIFICATION_STATUS),
+            default: NOTIFICATION_STATUS.UNREAD,
+        },
+        redirect: { type: String, default: '' },
+        data: [
+            {
+                text: { type: String, required: true },
+                variant: { type: String, default: '' },
+            },
+        ],
+        attachment: {
+            type: String,
+            default: '',
         },
     },
     { timestamps: true },
