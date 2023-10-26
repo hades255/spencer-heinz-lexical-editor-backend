@@ -395,7 +395,9 @@ const documentRouter = (fastify, opts, done) => {
                 const ip = request.ip;
                 const port = request.raw.connection.remotePort;
                 let nonActiveUsers = [];
+                console.log(contributors)
                 for (let contributor of contributors) {
+                    console.log(contributor)
                     if (contributor.status === USER_STATUS.INVITED) {
                         const token = generateSecretString(
                             request.user.email,

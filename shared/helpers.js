@@ -76,6 +76,7 @@ export const getDocNameByYDoc = (rooms, doc) => {
 
 export const sendEmail = async (mail) => {
     try {
+        console.log(mail);
         await transporter.sendMail(mail);
         console.log('Email sent successfully!');
     } catch (error) {

@@ -113,7 +113,7 @@ const notificationRouter = (fastify, opts, done) => {
                     if (!user) return;
                     const notifications = await NotificationModel.find({
                         $or: [{ to: { $eq: '' } }, { to: { $eq: user._id } }],
-                        // status: NOTIFICATION_STATUS.UNREAD,
+                        // status: NOTIFICATION_STATUS.UNREAD,  //  !
                     })
                         .sort({ createdAt: -1 })
                         .exec();
@@ -130,7 +130,7 @@ const notificationRouter = (fastify, opts, done) => {
                                 },
                             },
                         ],
-                        // status: NOTIFICATION_STATUS.UNREAD,
+                        // status: NOTIFICATION_STATUS.UNREAD,  //  !
                     })
                         .sort({ createdAt: -1 })
                         .exec();
