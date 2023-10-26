@@ -41,6 +41,7 @@ export const NOTIFICATION_TYPES = {
     DOCUMENT_INVITE_RECEIVE: '@document/invite/receive',
     DOCUMENT_INVITE_ACCEPT: '@document/invite/accept',
     DOCUMENT_INVITE_REJECT: '@document/invite/reject',
+    DOCUMENT_INVITE_APPROVE: '@document/invite/approve',
     USER_SETTING_ROLE: '@user/setting/role',
     USER_SETTING_STATUS: '@user/setting/status',
     USER_RESET_PASSWORD: '@user/reset/password',

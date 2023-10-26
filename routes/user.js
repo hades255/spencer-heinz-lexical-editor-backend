@@ -197,6 +197,80 @@ const userRouter = (fastify, opts, done) => {
     );
 
     fastify.put(
+        /*  "/" set status*/
+        '/s/status',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const { userIds, status, comment } = request.body;
+                let data = {};
+                switch (status) {
+                    case USER_STATUS.ACTIVE:
+                        data.approvedAt = new Date();
+                        break;
+                    case USER_STATUS.LOCKED:
+                        data.lockedAt = new Date();
+                        break;
+                    case USER_STATUS.DELETED:
+                        data.deletedAt = new Date();
+                        break;
+                    default:
+                        break;
+                }
+                userIds.forEach((userId) => {
+                    (async () => {
+                        try {
+                            const user = await UserModel.findById(userId);
+                            user.status = status;
+                            user.comment = comment;
+                            user.event = [
+                                {
+                                    status,
+                                    comment,
+                                    at: new Date(),
+                                    by: {
+                                        ...request.user,
+                                    },
+                                },
+                                ...(user.event || []),
+                            ];
+                            user.save();
+                            NotificationModel({
+                                to: user._id,
+                                type: NOTIFICATION_TYPES.USER_SETTING_ROLE,
+                                data: [
+                                    { text: 'Your', variant: 'subtitle1' },
+                                    { text: ' have ' },
+                                    { text: status, variant: 'subtitle1' },
+                                ],
+                            }).save();
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    })();
+                });
+
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: 'user',
+                    message: 'User updated successfully.',
+                });
+            } catch (e) {
+                console.log('user@delete-error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
+    fastify.put(
         /*  "/" set role*/
         '/role',
         {

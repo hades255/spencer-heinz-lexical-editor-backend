@@ -370,6 +370,124 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
+    fastify.post(
+        '/:uniqueId/invite',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            const { contributors } = request.body;
+            try {
+                const newDoc = await DocumentModel.findById(
+                    request.params.uniqueId,
+                );
+                newDoc.invites = [
+                    ...newDoc.invites,
+                    ...contributors.map((item) => ({
+                        ...item,
+                        invitor: request.user,
+                    })),
+                ];
+                newDoc.save();
+                const protocol = request.protocol;
+                const ip = request.ip;
+                const port = request.raw.connection.remotePort;
+                let nonActiveUsers = [];
+                for (let contributor of contributors) {
+                    if (contributor.status === USER_STATUS.INVITED) {
+                        const token = generateSecretString(
+                            request.user.email,
+                            contributor.email,
+                            newDoc._id,
+                        );
+                        InviteModel({
+                            creator: request.user,
+                            contributor,
+                            document: newDoc,
+                            token,
+                        }).save();
+                        setTimeout(() => {
+                            sendEmail({
+                                from: process.env.SERVER_MAIL_ADDRESS,
+                                to: contributor.email,
+                                subject: `${request.user.name} invited you to his document.`,
+                                text: `Title: ${newDoc.name} <br/> Description: ${newDoc.description} <br/> <a href="${protocol}://${ip}:${port}/invites/${token}">Click HERE</a> to contribute!`,
+                            });
+                        }, 100);
+                    } else {
+                        if (contributor.status !== USER_STATUS.ACTIVE) {
+                            nonActiveUsers.push(contributor);
+                        }
+                        NotificationModel({
+                            to: contributor._id,
+                            type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
+                            redirect: '/document/' + newDoc._id,
+                            data: [
+                                {
+                                    text: request.user.name,
+                                    variant: 'subtitle1',
+                                },
+                                {
+                                    text: ' invited you to join document - ',
+                                    variant: '',
+                                },
+                                { text: newDoc.name, variant: 'subtitle1' },
+                            ],
+                        }).save();
+                    }
+                }
+                NotificationModel({
+                    to: request.user._id,
+                    type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
+                    status: NOTIFICATION_STATUS.UNREAD,
+                    data: [
+                        { text: 'You', variant: 'subtitle1' },
+                        { text: ' invited ' },
+                        {
+                            text: nameSentence(
+                                contributors.map((item) => item.name),
+                            ),
+                            variant: 'subtitle1',
+                        },
+                        { text: ' other clients. Wait for the response' },
+                    ],
+                }).save();
+
+                if (nonActiveUsers.length) {
+                    MessageModel({
+                        from: request.user,
+                        to: 'admin',
+                        data: [
+                            { text: 'I', variant: 'subtitle1' },
+                            {
+                                text: ' invited some contributors who are not active now. Please resolve this.',
+                            },
+                        ],
+                        type: MESSAGE_TYPES.DOCUMENT_INVITE_RESOLVE,
+                        attachment: JSON.stringify(nonActiveUsers),
+                    }).save();
+                }
+
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        document: doc,
+                    },
+                    message: '',
+                });
+            } catch (e) {
+                console.log('document@error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
     fastify.put(
         '/invitation',
         {

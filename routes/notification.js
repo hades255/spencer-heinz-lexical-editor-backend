@@ -1,7 +1,11 @@
 import { fastifyPassport } from '../app.js';
 import MessageModel from '../models/Message.js';
 import NotificationModel from '../models/Notification.js';
-import { HTTP_RES_CODE, NOTIFICATION_STATUS } from '../shared/constants.js';
+import {
+    HTTP_RES_CODE,
+    NOTIFICATION_STATUS,
+    USER_ROLES,
+} from '../shared/constants.js';
 
 const notificationRouter = (fastify, opts, done) => {
     fastify.post('/', async (request, reply) => {
@@ -117,7 +121,14 @@ const notificationRouter = (fastify, opts, done) => {
                         $or: [
                             { to: { $eq: '' } },
                             { to: { $eq: user._id } },
-                            { to: { $eq: user.role } },
+                            {
+                                to: {
+                                    $eq:
+                                        user.role === USER_ROLES.SUPERADMIN
+                                            ? USER_ROLES.ADMIN
+                                            : user.role,
+                                },
+                            },
                         ],
                         // status: NOTIFICATION_STATUS.UNREAD,
                     })

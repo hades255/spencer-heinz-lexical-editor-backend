@@ -26,10 +26,10 @@ import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
 import inviteRouter from './routes/invite.js';
 import notificationRouter from './routes/notification.js';
+import messageRouter from './routes/message.js';
 
 import { initializeAuthSystem } from './middlewares/authentication.js';
 import { getDocNameByYDoc } from './shared/helpers.js';
-import { addUser } from './socket/index.js';
 
 export const Persistence = new LeveldbPersistence('./storage-location');
 
@@ -163,6 +163,7 @@ fastify.register(userRouter, { prefix: '/user' });
 fastify.register(inviteRouter, { prefix: '/invite' });
 fastify.register(documentRouter, { prefix: '/document' });
 fastify.register(notificationRouter, { prefix: '/notification' });
+fastify.register(messageRouter, { prefix: '/message' });
 
 const startApp = async () => {
     try {
