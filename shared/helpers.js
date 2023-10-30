@@ -26,7 +26,7 @@ export const generateRandomString = (length) => {
     return randomString;
 };
 
-export const nameSentence = (names) => {
+export const nameSentence = (names, suffix = ' other clients') => {
     switch (names.length) {
         case 0:
             return '';
@@ -37,7 +37,14 @@ export const nameSentence = (names) => {
         case 3:
             return names[0] + ', ' + names[1] + ' and ' + names[2];
         default:
-            return names[0] + ', ' + names[1] + ' and ' + (names.length - 2);
+            return (
+                names[0] +
+                ', ' +
+                names[1] +
+                ' and ' +
+                (names.length - 2) +
+                suffix
+            );
     }
 };
 

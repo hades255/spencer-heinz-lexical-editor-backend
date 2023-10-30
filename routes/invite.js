@@ -49,6 +49,7 @@ const inviteRouter = (fastify, opts, done) => {
                     data: {
                         user,
                         document,
+                        creator: invite.creator,
                     },
                     message: '',
                 });

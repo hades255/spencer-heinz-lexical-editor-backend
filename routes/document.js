@@ -176,8 +176,8 @@ const documentRouter = (fastify, opts, done) => {
     /**
      * @description connect to the room
      */
-    fastify.post(
-        '/delete',
+    fastify.delete(
+        '/:uniqueId',
         {
             preValidation: fastifyPassport.authenticate('protected', {
                 session: false,
@@ -185,13 +185,14 @@ const documentRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
-                const { uniqueId } = request.body;
-                const document = await DocumentModel.findById(uniqueId);
-                await document.deleteOne();
+                const { uniqueId } = request.params;
+                const document = await DocumentModel.findByIdAndRemove(
+                    uniqueId,
+                );
 
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
-                    data: {},
+                    data: { data: document },
                     message: '',
                 });
             } catch (e) {
@@ -294,7 +295,25 @@ const documentRouter = (fastify, opts, done) => {
                                     from: process.env.SERVER_MAIL_ADDRESS,
                                     to: contributor.email,
                                     subject: `${request.user.name} invited you to his document.`,
-                                    text: `Title: ${newDoc.name} <br/> Description: ${newDoc.description} <br/> <a href="${protocol}://${ip}:${port}/invites/${token}">Click HERE</a> to contribute!`,
+                                    html: `Title: ${
+                                        newDoc.name
+                                    } <br/> Description: ${
+                                        newDoc.description
+                                    } <br/><br/> 
+                                    <div style="display: flex; justify-content: center;">
+                                      <div><a
+                                      href="${
+                                          process.env.FRONTEND_ADDRESS || ''
+                                      }/invites/${token}"
+                                      style="
+                                        padding: 5px;
+                                        border: 1px solid blue;
+                                        border-radius: 5px;
+                                        background-color: blue;
+                                        color: white;
+                                      "
+                                      >Click Here</a>to contribute!</div>
+                                    </div>`,
                                 });
                             }, 100);
                         } else {
@@ -332,7 +351,7 @@ const documentRouter = (fastify, opts, done) => {
                                 ),
                                 variant: 'subtitle1',
                             },
-                            { text: ' other clients. Wait for the response' },
+                            { text: '. Wait for the response' },
                         ],
                     }).save();
 
@@ -395,9 +414,9 @@ const documentRouter = (fastify, opts, done) => {
                 const ip = request.ip;
                 const port = request.raw.connection.remotePort;
                 let nonActiveUsers = [];
-                console.log(contributors)
+                console.log(contributors);
                 for (let contributor of contributors) {
-                    console.log(contributor)
+                    console.log(contributor);
                     if (contributor.status === USER_STATUS.INVITED) {
                         const token = generateSecretString(
                             request.user.email,
@@ -415,7 +434,25 @@ const documentRouter = (fastify, opts, done) => {
                                 from: process.env.SERVER_MAIL_ADDRESS,
                                 to: contributor.email,
                                 subject: `${request.user.name} invited you to his document.`,
-                                text: `Title: ${newDoc.name} <br/> Description: ${newDoc.description} <br/> <a href="${protocol}://${ip}:${port}/invites/${token}">Click HERE</a> to contribute!`,
+                                html: `Title: ${
+                                    newDoc.name
+                                } <br/> Description: ${
+                                    newDoc.description
+                                } <br/><br/> 
+                                <div style="display: flex; justify-content: center;">
+                                  <div><a
+                                  href="${
+                                      process.env.FRONTEND_ADDRESS || ''
+                                  }/invites/${token}"
+                                  style="
+                                    padding: 5px;
+                                    border: 1px solid blue;
+                                    border-radius: 5px;
+                                    background-color: blue;
+                                    color: white;
+                                  "
+                                  >Click Here</a>to contribute!</div>
+                                </div>`,
                             });
                         }, 100);
                     } else {
@@ -453,7 +490,7 @@ const documentRouter = (fastify, opts, done) => {
                             ),
                             variant: 'subtitle1',
                         },
-                        { text: ' other clients. Wait for the response' },
+                        { text: '. Wait for the response' },
                     ],
                 }).save();
 

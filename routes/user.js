@@ -7,7 +7,6 @@ import {
 } from '../shared/constants.js';
 import UserModel from '../models/User.js';
 import mongoose from 'mongoose';
-import { getUsers } from '../socket/index.js';
 import NotificationModel from '../models/Notification.js';
 
 const userRouter = (fastify, opts, done) => {
@@ -75,7 +74,7 @@ const userRouter = (fastify, opts, done) => {
         async (request, reply) => {
             try {
                 const users = await UserModel.find({
-                    role: { $ne: USER_ROLES.SUPERADMIN },
+                    // role: { $ne: USER_ROLES.SUPERADMIN },
                 });
 
                 return reply.send({
@@ -243,7 +242,7 @@ const userRouter = (fastify, opts, done) => {
                                 to: user._id,
                                 type: NOTIFICATION_TYPES.USER_SETTING_ROLE,
                                 data: [
-                                    { text: 'Your', variant: 'subtitle1' },
+                                    { text: 'You', variant: 'subtitle1' },
                                     { text: ' have ' },
                                     { text: status, variant: 'subtitle1' },
                                 ],
