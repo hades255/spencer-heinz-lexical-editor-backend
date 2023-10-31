@@ -10,9 +10,9 @@ const inviteRouter = (fastify, opts, done) => {
         try {
             await transporter.sendMail({
                 from: process.env.SERVER_MAIL_ADDRESS,
-                to: 'montgasam@gmail.com',
+                to: 'hades.255@outlook.com',
                 subject: `invited you to his document.`,
-                text: `OK`,
+                html: `<a href="${process.env.FRONTEND_ADDRESS}">Click Here</a>`,
             });
 
             return reply.code(404).send({

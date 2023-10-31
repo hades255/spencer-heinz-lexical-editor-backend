@@ -17,6 +17,7 @@ export const MessageType = {
 };
 
 export const NOTIFICATION_STATUS = {
+    NEW: 'new',
     READ: 'read',
     UNREAD: 'unread',
 };

@@ -273,9 +273,6 @@ const documentRouter = (fastify, opts, done) => {
                 }).save();
 
                 if (contributors.length) {
-                    const protocol = request.protocol;
-                    const ip = request.ip;
-                    const port = request.raw.connection.remotePort;
                     let nonActiveUsers = [];
                     for (let contributor of contributors) {
                         if (contributor.status === USER_STATUS.INVITED) {
@@ -320,23 +317,23 @@ const documentRouter = (fastify, opts, done) => {
                             if (contributor.status !== USER_STATUS.ACTIVE) {
                                 nonActiveUsers.push(contributor);
                             }
-                            NotificationModel({
-                                to: contributor._id,
-                                type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
-                                redirect: '/document/' + newDoc._id,
-                                data: [
-                                    {
-                                        text: request.user.name,
-                                        variant: 'subtitle1',
-                                    },
-                                    {
-                                        text: ' invited you to join document - ',
-                                        variant: '',
-                                    },
-                                    { text: newDoc.name, variant: 'subtitle1' },
-                                ],
-                            }).save();
                         }
+                        NotificationModel({
+                            to: contributor._id,
+                            type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
+                            redirect: '/document/' + newDoc._id,
+                            data: [
+                                {
+                                    text: request.user.name,
+                                    variant: 'subtitle1',
+                                },
+                                {
+                                    text: ' invited you to join document - ',
+                                    variant: '',
+                                },
+                                { text: newDoc.name, variant: 'subtitle1' },
+                            ],
+                        }).save();
                     }
                     NotificationModel({
                         to: request.user._id,
@@ -351,6 +348,8 @@ const documentRouter = (fastify, opts, done) => {
                                 ),
                                 variant: 'subtitle1',
                             },
+                            { text: ' to your document - ' },
+                            { text: newDoc.name, variant: 'subtitle1' },
                             { text: '. Wait for the response' },
                         ],
                     }).save();

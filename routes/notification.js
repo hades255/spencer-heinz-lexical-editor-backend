@@ -73,6 +73,10 @@ const notificationRouter = (fastify, opts, done) => {
                         { to: { $eq: '' } },
                         { to: { $eq: request.user._id } },
                     ],
+                    // $or: [
+                    //     { status: { $eq: NOTIFICATION_STATUS.READ,} },
+                    //     { status: { $eq: NOTIFICATION_STATUS.UNREAD,} },
+                    // ],
                     status: NOTIFICATION_STATUS.READ,
                 }).sort({ createdAt: -1 });
                 return reply.send({
@@ -104,10 +108,6 @@ const notificationRouter = (fastify, opts, done) => {
                 await NotificationModel.updateMany(
                     {
                         to: request.user._id,
-                        // $or: [
-                        // { to: { $eq: '' } },
-                        // { to: { $eq: request.user._id } },
-                        // ],
                     },
                     { status: NOTIFICATION_STATUS.READ },
                 );
@@ -128,8 +128,38 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
+    fastify.put(
+        '/:_id',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                await NotificationModel.findByIdAndUpdate(request.params._id, {
+                    status: NOTIFICATION_STATUS.READ,
+                });
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        msg: 'OK',
+                    },
+                    message: '',
+                });
+            } catch (error) {
+                console.log('document@get-error:', error);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
     fastify.get('/socket', { websocket: true }, (connection, req) => {
         let user = null;
+        let date = new Date('2023-10-01T00:00:00Z');
         connection.socket.on('message', (message) => {
             // Handle incoming messages from the client
             user = JSON.parse(message.toString());
@@ -146,12 +176,8 @@ const notificationRouter = (fastify, opts, done) => {
                     if (!user) return;
                     const notifications = await NotificationModel.find({
                         $or: [{ to: { $eq: '' } }, { to: { $eq: user._id } }],
-                        status: NOTIFICATION_STATUS.UNREAD, //  !
+                        createdAt: { $gt: date },
                     }).sort({ createdAt: -1 });
-                    notifications.forEach((item) => {
-                        item.status = NOTIFICATION_STATUS.READ;
-                        item.save();
-                    });
                     const messages = await MessageModel.find({
                         $or: [
                             { to: { $eq: '' } },
@@ -165,10 +191,11 @@ const notificationRouter = (fastify, opts, done) => {
                                 },
                             },
                         ],
-                        // status: NOTIFICATION_STATUS.UNREAD,  //  !
+                        createdAt: { $gt: date },
                     })
                         .sort({ createdAt: -1 })
                         .exec();
+                    date = new Date(Date.now());
                     if (notifications.length || messages.length)
                         connection.socket.send(
                             JSON.stringify({ notifications, messages }),

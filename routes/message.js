@@ -76,6 +76,78 @@ const messageRouter = (fastify, opts, done) => {
             }
         },
     );
+    fastify.put(
+        '/',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                await MessageModel.updateMany(
+                    {
+                        $or: [
+                            { to: { $eq: request.user._id } },
+                            {
+                                to: {
+                                    $eq:
+                                        request.user.role ===
+                                        USER_ROLES.SUPERADMIN
+                                            ? USER_ROLES.ADMIN
+                                            : request.user.role,
+                                },
+                            },
+                        ],
+                    },
+                    { status: NOTIFICATION_STATUS.READ },
+                );
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        msg: 'OK',
+                    },
+                    message: '',
+                });
+            } catch (error) {
+                console.log('document@get-error:', error);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+    fastify.put(
+        '/:_id',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                await MessageModel.findByIdAndUpdate(request.params._id, {
+                    status: NOTIFICATION_STATUS.READ,
+                });
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        msg: 'OK',
+                    },
+                    message: '',
+                });
+            } catch (error) {
+                console.log('document@get-error:', error);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
     done();
 };
 
