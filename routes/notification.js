@@ -59,6 +59,39 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
+    fastify.get(
+        '/read',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const notifications = await NotificationModel.find({
+                    $or: [
+                        { to: { $eq: '' } },
+                        { to: { $eq: request.user._id } },
+                    ],
+                    status: NOTIFICATION_STATUS.READ,
+                }).sort({ createdAt: -1 });
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        notifications,
+                    },
+                    message: '',
+                });
+            } catch (error) {
+                console.log('document@get-error:', error);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
     fastify.put(
         '/',
         {
@@ -113,10 +146,12 @@ const notificationRouter = (fastify, opts, done) => {
                     if (!user) return;
                     const notifications = await NotificationModel.find({
                         $or: [{ to: { $eq: '' } }, { to: { $eq: user._id } }],
-                        // status: NOTIFICATION_STATUS.UNREAD,  //  !
-                    })
-                        .sort({ createdAt: -1 })
-                        .exec();
+                        status: NOTIFICATION_STATUS.UNREAD, //  !
+                    }).sort({ createdAt: -1 });
+                    notifications.forEach((item) => {
+                        item.status = NOTIFICATION_STATUS.READ;
+                        item.save();
+                    });
                     const messages = await MessageModel.find({
                         $or: [
                             { to: { $eq: '' } },
@@ -134,16 +169,17 @@ const notificationRouter = (fastify, opts, done) => {
                     })
                         .sort({ createdAt: -1 })
                         .exec();
-                    connection.socket.send(
-                        JSON.stringify({ notifications, messages }),
-                    );
+                    if (notifications.length || messages.length)
+                        connection.socket.send(
+                            JSON.stringify({ notifications, messages }),
+                        );
                 }
             } catch (error) {
                 console.log(error);
             }
         };
 
-        notificationTimer();
+        setTimeout(notificationTimer, 1000);
     });
     done();
 };

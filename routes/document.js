@@ -410,9 +410,6 @@ const documentRouter = (fastify, opts, done) => {
                     })),
                 ];
                 newDoc.save();
-                const protocol = request.protocol;
-                const ip = request.ip;
-                const port = request.raw.connection.remotePort;
                 let nonActiveUsers = [];
                 console.log(contributors);
                 for (let contributor of contributors) {
@@ -512,7 +509,7 @@ const documentRouter = (fastify, opts, done) => {
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {
-                        document: doc,
+                        document: newDoc,
                     },
                     message: '',
                 });

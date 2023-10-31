@@ -37,6 +37,11 @@ const inviteRouter = (fastify, opts, done) => {
                 if (invite.status === 'done') {
                     return reply.send({
                         code: HTTP_RES_CODE.ERROR,
+                        data: {
+                            user: invite.contributor,
+                            document: invite.document,
+                            creator: invite.creator,
+                        },
                         message: '',
                     });
                 }
