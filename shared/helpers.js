@@ -90,3 +90,16 @@ export const sendEmail = async (mail) => {
         console.error('Email Error: ', error);
     }
 };
+
+export const findCommonElementsByKey = (arr1, arr2, key = '_id') => {
+    const commonElements = arr1.filter((obj1) =>
+        arr2.some((obj2) => obj2[key] === obj1[key]),
+    );
+    return commonElements;
+};
+export const compareArrays = (A, B, key = '_id') => {
+    const elementsOnlyInA = A.filter(
+        (objA) => !B.some((objB) => objB[key] === objA[key]),
+    );
+    return elementsOnlyInA;
+};

@@ -134,7 +134,7 @@ export const YjsServer = createYjsServer({
             // yxmlText.observe(event => { console.log(event.changes.delta) })
             const rootElement = GlobalYjsData.getRootElement(docName);
             // const rootElement = doc.get('root', Y.XmlElement)
-            rootElement.forEach((value) => {
+            rootElement?.forEach((value) => {
                 // console.log(value._map.get('__type').content.getContent().toString())
 
                 /**

@@ -4,6 +4,7 @@ import NotificationModel from '../models/Notification.js';
 import {
     HTTP_RES_CODE,
     NOTIFICATION_STATUS,
+    NOTIFICATION_TYPES,
     USER_ROLES,
 } from '../shared/constants.js';
 
@@ -27,6 +28,7 @@ const notificationRouter = (fastify, opts, done) => {
             });
         }
     });
+    //  all notifications
     fastify.get(
         '/',
         {
@@ -59,6 +61,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
+    //  read notifications
     fastify.get(
         '/read',
         {
@@ -96,6 +99,40 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
+    //  read notification with document and user
+    fastify.get(
+        '/document',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const notification = await NotificationModel.findOne({
+                    to: request.query.user,
+                    redirect: '/document/' + request.query.document,
+                    status: NOTIFICATION_STATUS.UNREAD,
+                    type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
+                });
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        notification,
+                    },
+                    message: '',
+                });
+            } catch (error) {
+                console.log('document@get-error:', error);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+    //  mark as read all
     fastify.put(
         '/',
         {
@@ -128,6 +165,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
+    //  mark as read one
     fastify.put(
         '/:_id',
         {
@@ -157,6 +195,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
+    //  socket
     fastify.get('/socket', { websocket: true }, (connection, req) => {
         let user = null;
         let date = new Date('2023-10-01T00:00:00Z');

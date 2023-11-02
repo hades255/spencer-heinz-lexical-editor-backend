@@ -63,8 +63,8 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    //  "/" get all users
     fastify.get(
-        //  "/" get all users without super admin
         '/',
         {
             preValidation: fastifyPassport.authenticate('protected', {
@@ -95,8 +95,38 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    //  "/" get users with email
+    fastify.get(
+        '/email',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const users = await UserModel.find({
+                    email: { $in: JSON.parse(request.query.users) },
+                });
+
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    users,
+                    message: 'Success',
+                });
+            } catch (e) {
+                console.log('user@get-error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
+    //  deprecated
     fastify.post(
-        //  deprecated
         '/deleteUser',
         {
             preValidation: fastifyPassport.authenticate('protected', {
@@ -127,8 +157,8 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    /*  "/" set status*/
     fastify.put(
-        /*  "/" set status*/
         '/',
         {
             preValidation: fastifyPassport.authenticate('protected', {
@@ -173,8 +203,10 @@ const userRouter = (fastify, opts, done) => {
                     to: user._id,
                     type: NOTIFICATION_TYPES.USER_SETTING_ROLE,
                     data: [
-                        { text: 'Your', variant: 'subtitle1' },
-                        { text: ' have ' },
+                        { text: 'Admin', variant: 'subtitle1' },
+                        { text: ' updated your status. ' },
+                        { text: 'You', variant: 'subtitle1' },
+                        { text: ' are ' },
                         { text: status, variant: 'subtitle1' },
                     ],
                 }).save();
@@ -195,8 +227,8 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    /*  "/" set multi status*/
     fastify.put(
-        /*  "/" set status*/
         '/s/status',
         {
             preValidation: fastifyPassport.authenticate('protected', {

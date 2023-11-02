@@ -85,8 +85,6 @@ const inviteRouter = (fastify, opts, done) => {
                         message: '',
                     });
                 }
-                invite.status = 'done';
-                invite.save();
                 const user = await UserModel.findById(invite.contributor._id);
                 user.status = USER_STATUS.ACTIVE;
                 user.password = request.body.password;
@@ -102,11 +100,11 @@ const inviteRouter = (fastify, opts, done) => {
                     document.contributors = [...document.contributors, user];
                 document.invites = document.invites.map((item) => ({
                     ...item,
-                    status:
+                    reply:
                         item._id.toString() ===
                         invite.contributor._id.toString()
                             ? 'accept'
-                            : item.status,
+                            : item.reply,
                     date:
                         item._id.toString() ===
                         invite.contributor._id.toString()
@@ -115,6 +113,8 @@ const inviteRouter = (fastify, opts, done) => {
                 }));
                 document.save();
                 const serviceToken = createAuthToken(user);
+                invite.status = 'done';
+                invite.save();
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {

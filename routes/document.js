@@ -13,6 +13,7 @@ import { JWT_SECRET_KEY } from '../conf.js';
 import NotificationModel from '../models/Notification.js';
 import InviteModel from '../models/invite.js';
 import {
+    compareArrays,
     generateSecretString,
     nameSentence,
     sendEmail,
@@ -23,7 +24,6 @@ const documentRouter = (fastify, opts, done) => {
     /**
      * @description get rooms initiazed
      */
-
     const GlobalRooms = fastify.appData.rooms;
     fastify.get('/rooms', (req, res) => {
         let rooms = [];
@@ -43,9 +43,7 @@ const documentRouter = (fastify, opts, done) => {
         });
     });
 
-    /**
-     * @description connect to the room
-     */
+    //  get all documents-/
     fastify.get(
         '/',
         {
@@ -77,6 +75,8 @@ const documentRouter = (fastify, opts, done) => {
             }
         },
     );
+
+    //  get all document that I can access-/mine
     fastify.get(
         '/mine',
         {
@@ -87,7 +87,7 @@ const documentRouter = (fastify, opts, done) => {
         async (request, reply) => {
             try {
                 const documents = await DocumentModel.find({})
-                    .populate(['creator', 'contributors'])
+                    .populate(['creator'])
                     // .sort({ updatedAt: -1 })
                     .exec();
 
@@ -118,9 +118,7 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
-    /**
-     * @description connect to the room
-     */
+    //  '/users/:uniqueId'
     fastify.get(
         '/users/:uniqueId',
         {
@@ -173,9 +171,7 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
-    /**
-     * @description connect to the room
-     */
+    //  remove a document-'/:uniqueId'
     fastify.delete(
         '/:uniqueId',
         {
@@ -206,9 +202,7 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
-    /**
-     * @description connect to the room
-     */
+    //  update a document-'/update/:uniqueId'
     fastify.post(
         '/update/:uniqueId',
         {
@@ -252,6 +246,7 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
+    //  create a new document-/
     fastify.post(
         '/',
         {
@@ -271,9 +266,9 @@ const documentRouter = (fastify, opts, done) => {
                     contributors: [],
                     creator: request.user._id,
                 }).save();
-
+                //  if want to invite users
                 if (contributors.length) {
-                    let nonActiveUsers = [];
+                    let nonActiveUsers = []; //  used for get non active users from the contributors
                     for (let contributor of contributors) {
                         if (contributor.status === USER_STATUS.INVITED) {
                             const token = generateSecretString(
@@ -314,6 +309,32 @@ const documentRouter = (fastify, opts, done) => {
                                 });
                             }, 100);
                         } else {
+                            setTimeout(() => {
+                                sendEmail({
+                                    from: process.env.SERVER_MAIL_ADDRESS,
+                                    to: contributor.email,
+                                    subject: `${request.user.name} invited you to his document.`,
+                                    html: `Title: ${
+                                        newDoc.name
+                                    } <br/> Description: ${
+                                        newDoc.description
+                                    } <br/><br/> 
+                                    <div style="display: flex; justify-content: center;">
+                                      <div><a
+                                      href="${
+                                          process.env.FRONTEND_ADDRESS || ''
+                                      }/document/${newDoc._id}"
+                                      style="
+                                        padding: 5px;
+                                        border: 1px solid blue;
+                                        border-radius: 5px;
+                                        background-color: blue;
+                                        color: white;
+                                      "
+                                      >Click Here</a>to contribute!</div>
+                                    </div>`,
+                                });
+                            }, 100);
                             if (contributor.status !== USER_STATUS.ACTIVE) {
                                 nonActiveUsers.push(contributor);
                             }
@@ -328,7 +349,7 @@ const documentRouter = (fastify, opts, done) => {
                                     variant: 'subtitle1',
                                 },
                                 {
-                                    text: ' invited you to join document - ',
+                                    text: ' invited you to join document. Document: ',
                                     variant: '',
                                 },
                                 { text: newDoc.name, variant: 'subtitle1' },
@@ -348,7 +369,7 @@ const documentRouter = (fastify, opts, done) => {
                                 ),
                                 variant: 'subtitle1',
                             },
-                            { text: ' to your document - ' },
+                            { text: ' to your document. Document: ' },
                             { text: newDoc.name, variant: 'subtitle1' },
                             { text: '. Wait for the response' },
                         ],
@@ -388,6 +409,9 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
+    /**
+     * send invitation from contributor-'/:uniqueId/invite'
+     */
     fastify.post(
         '/:uniqueId/invite',
         {
@@ -410,10 +434,9 @@ const documentRouter = (fastify, opts, done) => {
                 ];
                 newDoc.save();
                 let nonActiveUsers = [];
-                console.log(contributors);
                 for (let contributor of contributors) {
-                    console.log(contributor);
                     if (contributor.status === USER_STATUS.INVITED) {
+                        //  send invitation email to manually created user
                         const token = generateSecretString(
                             request.user.email,
                             contributor.email,
@@ -425,6 +448,8 @@ const documentRouter = (fastify, opts, done) => {
                             document: newDoc,
                             token,
                         }).save();
+                        //  send email to invited user who are not registered yet.
+                        //  sending email part must be in setTimeout because that cause error.
                         setTimeout(() => {
                             sendEmail({
                                 from: process.env.SERVER_MAIL_ADDRESS,
@@ -455,41 +480,68 @@ const documentRouter = (fastify, opts, done) => {
                         if (contributor.status !== USER_STATUS.ACTIVE) {
                             nonActiveUsers.push(contributor);
                         }
-                        NotificationModel({
-                            to: contributor._id,
-                            type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
-                            redirect: '/document/' + newDoc._id,
-                            data: [
-                                {
-                                    text: request.user.name,
-                                    variant: 'subtitle1',
-                                },
-                                {
-                                    text: ' invited you to join document - ',
-                                    variant: '',
-                                },
-                                { text: newDoc.name, variant: 'subtitle1' },
-                            ],
-                        }).save();
+                        //  send email to exist user to join the document.
+                        setTimeout(() => {
+                            sendEmail({
+                                from: process.env.SERVER_MAIL_ADDRESS,
+                                to: contributor.email,
+                                subject: `${request.user.name} invited you to his document.`,
+                                html: `Title: ${newDoc.name} <br/> Description: ${newDoc.description} <br/><br/> 
+                                <div style="display: flex; justify-content: center;">
+                                  <div><a
+                                  href="/document/${newDoc._id}"
+                                  style="
+                                    padding: 5px;
+                                    border: 1px solid blue;
+                                    border-radius: 5px;
+                                    background-color: blue;
+                                    color: white;
+                                  "
+                                  >Click Here</a>to contribute!</div>
+                                </div>`,
+                            });
+                        }, 100);
                     }
+                    //  send notification to users who are invited whether those status are not active
+                    NotificationModel({
+                        to: contributor._id,
+                        type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
+                        redirect: '/document/' + newDoc._id,
+                        data: [
+                            {
+                                text: request.user.name,
+                                variant: 'subtitle1',
+                            },
+                            {
+                                text: ' invited you to join document. Document: ',
+                                variant: '',
+                            },
+                            { text: newDoc.name, variant: 'subtitle1' },
+                        ],
+                    }).save();
                 }
-                NotificationModel({
-                    to: request.user._id,
-                    type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
-                    status: NOTIFICATION_STATUS.UNREAD,
-                    data: [
-                        { text: 'You', variant: 'subtitle1' },
-                        { text: ' invited ' },
-                        {
-                            text: nameSentence(
-                                contributors.map((item) => item.name),
-                            ),
-                            variant: 'subtitle1',
-                        },
-                        { text: '. Wait for the response' },
-                    ],
-                }).save();
-
+                if (contributors.length !== 0) {
+                    //  send a notification to creator to wait his contributors to join
+                    NotificationModel({
+                        to: request.user._id,
+                        type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
+                        status: NOTIFICATION_STATUS.UNREAD,
+                        data: [
+                            { text: 'You', variant: 'subtitle1' },
+                            { text: ' invited ' },
+                            {
+                                text: nameSentence(
+                                    contributors.map((item) => item.name),
+                                ),
+                                variant: 'subtitle1',
+                            },
+                            { text: '. Document:' },
+                            { text: newDoc.name, variant: 'subtitle1' },
+                            { text: ' Wait for the response' },
+                        ],
+                    }).save();
+                }
+                //  if there is any user that status is not active now, send message to admin to handle this
                 if (nonActiveUsers.length) {
                     MessageModel({
                         from: request.user,
@@ -504,6 +556,85 @@ const documentRouter = (fastify, opts, done) => {
                         attachment: JSON.stringify(nonActiveUsers),
                     }).save();
                 }
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        document: newDoc,
+                    },
+                    message: '',
+                });
+            } catch (e) {
+                console.log('document@error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
+    /**
+     * delete invitors from creator-'/:uniqueId/clearinvite'
+     */
+    fastify.post(
+        '/:uniqueId/clearinvite',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            const { contributors } = request.body;
+            try {
+                const newDoc = await DocumentModel.findById(
+                    request.params.uniqueId,
+                );
+                newDoc.invites = compareArrays(
+                    newDoc.invites,
+                    contributors,
+                    'email',
+                );
+                newDoc.contributors = compareArrays(
+                    newDoc.contributors,
+                    contributors,
+                    'email',
+                );
+                newDoc.save();
+                for (let contributor of contributors) {
+                    NotificationModel({
+                        to: contributor._id,
+                        type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
+                        data: [
+                            {
+                                text: request.user.name,
+                                variant: 'subtitle1',
+                            },
+                            {
+                                text: ' deleted you from document - ',
+                                variant: '',
+                            },
+                            { text: newDoc.name, variant: 'subtitle1' },
+                        ],
+                    }).save();
+                }
+                NotificationModel({
+                    to: request.user._id,
+                    type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
+                    status: NOTIFICATION_STATUS.UNREAD,
+                    data: [
+                        { text: 'You', variant: 'subtitle1' },
+                        { text: ' removed ' },
+                        {
+                            text: nameSentence(
+                                contributors.map((item) => item.name),
+                            ),
+                            variant: 'subtitle1',
+                        },
+                        { text: ' from your document - ' },
+                        { text: newDoc.name, variant: 'subtitle1' },
+                    ],
+                }).save();
 
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
@@ -523,6 +654,7 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
+    //  handle invitation-'/invitation'
     fastify.put(
         '/invitation',
         {
@@ -563,11 +695,11 @@ const documentRouter = (fastify, opts, done) => {
                     }
                     doc.invites = doc.invites.map((invite) => ({
                         ...invite,
-                        status:
+                        reply:
                             invite._id.toString() ===
                             request.user._id.toString()
                                 ? status
-                                : invite.status,
+                                : invite.reply,
                         date:
                             invite._id.toString() ===
                             request.user._id.toString()
@@ -618,6 +750,7 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
+    // get one document-'/:uniqueId'
     fastify.get(
         '/:uniqueId',
         {
@@ -649,23 +782,23 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
-    /**
-     * @description connect to the room
-     */
+    //  MAIN - lexical editor-socket-'/connect/:uniqueId'
     fastify.get(
         '/connect/:uniqueId',
         { websocket: true },
         async (connection, request) => {
             try {
                 const { socket } = connection;
+                const whenAuthorized = await authorize(socket, request).catch(
+                    () => {
+                        connection.close(4001);
+                        return false;
+                    },
+                );
                 //TODO- check if verified, remove all remaining sockets from room
 
                 // check if room exists. If yes, then connect or create room
-                YjsServer.handleConnection(
-                    socket,
-                    request,
-                    authorize(socket, request),
-                );
+                YjsServer.handleConnection(socket, request, whenAuthorized);
             } catch (e) {
                 console.log('document@create-room-error:', e);
             }

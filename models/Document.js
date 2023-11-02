@@ -68,6 +68,7 @@ const DocumentSchema = new Schema(
                     default: '',
                 },
                 status: { type: String, default: USER_STATUS.PENDING },
+                reply: { type: String, default: 'pending' },
                 invitor: {
                     _id: {
                         type: String,
