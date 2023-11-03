@@ -22,29 +22,20 @@ const authRouter = (fastify, opts, done) => {
                     company,
                 } = request.body;
                 const user = request.user;
-                const users = await UserModel.find({ mobilePhone });
-                if (users.length) {
-                    reply.code(500).send({
-                        code: HTTP_RES_CODE.ERROR,
-                        data: {},
-                        message: 'Mobile Phone Number is duplicated',
-                    });
-                } else {
-                    user.status = status;
-                    user.company = company;
-                    user.name = name;
-                    user.countryCode = countryCode;
-                    user.mobilePhone = mobilePhone;
-                    user.workPhone = workPhone;
-                    await user.save();
-                    reply.send({
-                        code: HTTP_RES_CODE.SUCCESS,
-                        data: {
-                            user: user,
-                        },
-                        message: '',
-                    });
-                }
+                user.status = status;
+                user.company = company;
+                user.name = name;
+                user.countryCode = countryCode;
+                user.mobilePhone = mobilePhone;
+                user.workPhone = workPhone;
+                await user.save();
+                reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        user: user,
+                    },
+                    message: '',
+                });
             } catch (error) {
                 console.log(error);
                 reply.code(500).send({

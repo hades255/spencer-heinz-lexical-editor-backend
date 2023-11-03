@@ -33,7 +33,7 @@ export const nameSentence = (names, suffix = ' other clients') => {
         case 1:
             return names[0];
         case 2:
-            return names[0] + ', ' + names[1];
+            return names[0] + ' and ' + names[1];
         case 3:
             return names[0] + ', ' + names[1] + ' and ' + names[2];
         default:
@@ -83,12 +83,59 @@ export const getDocNameByYDoc = (rooms, doc) => {
 
 export const sendEmail = async (mail) => {
     try {
-        console.log(mail);
         await transporter.sendMail(mail);
-        console.log('Email sent successfully!');
     } catch (error) {
         console.error('Email Error: ', error);
     }
+};
+
+export const sendInvitationEmailToExist = (from, to, doc) => {
+    setTimeout(() => {
+        sendEmail({
+            from: process.env.SERVER_MAIL_ADDRESS,
+            to: to.email,
+            subject: `${from.name} invited you to his document.`,
+            html: `Title: ${doc.name} <br/> Description: ${
+                doc.description
+            } <br/><br/> 
+            <div style="display: flex; justify-content: center;">
+              <div><a
+              href="${process.env.FRONTEND_ADDRESS || ''}/document/${doc._id}"
+              style="
+                padding: 5px;
+                border: 1px solid blue;
+                border-radius: 5px;
+                background-color: blue;
+                color: white;
+              "
+              >Click Here</a>to contribute!</div>
+            </div>`,
+        });
+    }, 100);
+};
+export const sendInvitationEmailToNew = (from, to, doc, token) => {
+    setTimeout(() => {
+        sendEmail({
+            from: process.env.SERVER_MAIL_ADDRESS,
+            to: to.email,
+            subject: `${from.name} invited you to his document.`,
+            html: `Title: ${doc.name} <br/> Description: ${
+                doc.description
+            } <br/><br/> 
+            <div style="display: flex; justify-content: center;">
+              <div><a
+              href="${process.env.FRONTEND_ADDRESS || ''}/invites/${token}"
+              style="
+                padding: 5px;
+                border: 1px solid blue;
+                border-radius: 5px;
+                background-color: blue;
+                color: white;
+              "
+              >Click Here</a>to contribute!</div>
+            </div>`,
+        });
+    }, 100);
 };
 
 export const findCommonElementsByKey = (arr1, arr2, key = '_id') => {

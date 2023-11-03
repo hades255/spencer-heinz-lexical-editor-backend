@@ -8,6 +8,7 @@ import {
 import UserModel from '../models/User.js';
 import mongoose from 'mongoose';
 import NotificationModel from '../models/Notification.js';
+import { sendEmail } from '../shared/helpers.js';
 
 const userRouter = (fastify, opts, done) => {
     /**
@@ -301,8 +302,8 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    /*  "/" set role*/
     fastify.put(
-        /*  "/" set role*/
         '/role',
         {
             preValidation: fastifyPassport.authenticate('protected', {
@@ -317,7 +318,6 @@ const userRouter = (fastify, opts, done) => {
                     role,
                     comment,
                 });
-
                 NotificationModel({
                     to: user._id,
                     type: NOTIFICATION_TYPES.USER_SETTING_ROLE,
@@ -327,6 +327,14 @@ const userRouter = (fastify, opts, done) => {
                         { text: role, variant: 'subtitle1' },
                     ],
                 }).save();
+                setTimeout(() => {
+                    sendEmail({
+                        from: process.env.SERVER_MAIL_ADDRESS,
+                        to: user.email,
+                        subject: `Your role has been set as ${status}.`,
+                        html: `Your role has been set as ${status}.`,
+                    });
+                }, 100);
 
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
@@ -344,8 +352,8 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    //  "/password" reset password
     fastify.post(
-        //  "/password" reset password
         '/password',
         {
             preValidation: fastifyPassport.authenticate('protected', {
@@ -387,8 +395,8 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    //  udpate ?*
     fastify.post(
-        //  udpate ?*
         '/update/:uniqueId',
         {
             preValidation: fastifyPassport.authenticate('protected', {

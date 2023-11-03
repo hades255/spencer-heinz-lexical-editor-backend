@@ -16,7 +16,8 @@ import {
     compareArrays,
     generateSecretString,
     nameSentence,
-    sendEmail,
+    sendInvitationEmailToExist,
+    sendInvitationEmailToNew,
 } from '../shared/helpers.js';
 import MessageModel from '../models/Message.js';
 
@@ -129,7 +130,9 @@ const documentRouter = (fastify, opts, done) => {
         async (request, reply) => {
             const { uniqueId } = request.params;
             try {
-                const document = await DocumentModel.findById(uniqueId);
+                const document = await DocumentModel.findById(uniqueId)
+                    .populate(['creator'])
+                    .exec();
 
                 if (!document) {
                     return reply.code(403).send({
@@ -202,9 +205,9 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
-    //  update a document-'/update/:uniqueId'
-    fastify.post(
-        '/update/:uniqueId',
+    //  update a document-'/:uniqueId'
+    fastify.put(
+        '/:uniqueId',
         {
             preValidation: fastifyPassport.authenticate('protected', {
                 session: false,
@@ -212,9 +215,11 @@ const documentRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             const { uniqueId } = request.params;
-            const { name, description, initialText } = request.body;
+            const { name, description } = request.body;
             try {
-                const document = await DocumentModel.findById(uniqueId);
+                const document = await DocumentModel.findById(uniqueId)
+                    .populate(['creator'])
+                    .exec();
                 if (!document) {
                     return reply.code(403).send({
                         code: HTTP_RES_CODE.ERROR,
@@ -225,13 +230,12 @@ const documentRouter = (fastify, opts, done) => {
 
                 document.name = name;
                 document.description = description;
-                document.initialText = initialText;
                 await document.save();
 
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {
-                        document: document,
+                        document,
                     },
                     message: '',
                 });
@@ -255,8 +259,15 @@ const documentRouter = (fastify, opts, done) => {
             }),
         },
         async (request, reply) => {
-            const { name, description, initialText, contributors } =
-                request.body;
+            const {
+                name,
+                description,
+                initialText,
+                contributors: incontributors,
+            } = request.body;
+            const contributors = incontributors.filter(
+                (item) => item.email !== request.user.email,
+            );
             try {
                 const newDoc = await DocumentModel({
                     name,
@@ -282,59 +293,18 @@ const documentRouter = (fastify, opts, done) => {
                                 document: newDoc,
                                 token,
                             }).save();
-                            setTimeout(() => {
-                                sendEmail({
-                                    from: process.env.SERVER_MAIL_ADDRESS,
-                                    to: contributor.email,
-                                    subject: `${request.user.name} invited you to his document.`,
-                                    html: `Title: ${
-                                        newDoc.name
-                                    } <br/> Description: ${
-                                        newDoc.description
-                                    } <br/><br/> 
-                                    <div style="display: flex; justify-content: center;">
-                                      <div><a
-                                      href="${
-                                          process.env.FRONTEND_ADDRESS || ''
-                                      }/invites/${token}"
-                                      style="
-                                        padding: 5px;
-                                        border: 1px solid blue;
-                                        border-radius: 5px;
-                                        background-color: blue;
-                                        color: white;
-                                      "
-                                      >Click Here</a>to contribute!</div>
-                                    </div>`,
-                                });
-                            }, 100);
+                            sendInvitationEmailToNew(
+                                request.user,
+                                contributor,
+                                newDoc,
+                                token,
+                            );
                         } else {
-                            setTimeout(() => {
-                                sendEmail({
-                                    from: process.env.SERVER_MAIL_ADDRESS,
-                                    to: contributor.email,
-                                    subject: `${request.user.name} invited you to his document.`,
-                                    html: `Title: ${
-                                        newDoc.name
-                                    } <br/> Description: ${
-                                        newDoc.description
-                                    } <br/><br/> 
-                                    <div style="display: flex; justify-content: center;">
-                                      <div><a
-                                      href="${
-                                          process.env.FRONTEND_ADDRESS || ''
-                                      }/document/${newDoc._id}"
-                                      style="
-                                        padding: 5px;
-                                        border: 1px solid blue;
-                                        border-radius: 5px;
-                                        background-color: blue;
-                                        color: white;
-                                      "
-                                      >Click Here</a>to contribute!</div>
-                                    </div>`,
-                                });
-                            }, 100);
+                            sendInvitationEmailToExist(
+                                request.user,
+                                contributor,
+                                newDoc,
+                            );
                             if (contributor.status !== USER_STATUS.ACTIVE) {
                                 nonActiveUsers.push(contributor);
                             }
@@ -450,57 +420,22 @@ const documentRouter = (fastify, opts, done) => {
                         }).save();
                         //  send email to invited user who are not registered yet.
                         //  sending email part must be in setTimeout because that cause error.
-                        setTimeout(() => {
-                            sendEmail({
-                                from: process.env.SERVER_MAIL_ADDRESS,
-                                to: contributor.email,
-                                subject: `${request.user.name} invited you to his document.`,
-                                html: `Title: ${
-                                    newDoc.name
-                                } <br/> Description: ${
-                                    newDoc.description
-                                } <br/><br/> 
-                                <div style="display: flex; justify-content: center;">
-                                  <div><a
-                                  href="${
-                                      process.env.FRONTEND_ADDRESS || ''
-                                  }/invites/${token}"
-                                  style="
-                                    padding: 5px;
-                                    border: 1px solid blue;
-                                    border-radius: 5px;
-                                    background-color: blue;
-                                    color: white;
-                                  "
-                                  >Click Here</a>to contribute!</div>
-                                </div>`,
-                            });
-                        }, 100);
+                        sendInvitationEmailToNew(
+                            request.user,
+                            contributor,
+                            newDoc,
+                            token,
+                        );
                     } else {
                         if (contributor.status !== USER_STATUS.ACTIVE) {
                             nonActiveUsers.push(contributor);
                         }
                         //  send email to exist user to join the document.
-                        setTimeout(() => {
-                            sendEmail({
-                                from: process.env.SERVER_MAIL_ADDRESS,
-                                to: contributor.email,
-                                subject: `${request.user.name} invited you to his document.`,
-                                html: `Title: ${newDoc.name} <br/> Description: ${newDoc.description} <br/><br/> 
-                                <div style="display: flex; justify-content: center;">
-                                  <div><a
-                                  href="/document/${newDoc._id}"
-                                  style="
-                                    padding: 5px;
-                                    border: 1px solid blue;
-                                    border-radius: 5px;
-                                    background-color: blue;
-                                    color: white;
-                                  "
-                                  >Click Here</a>to contribute!</div>
-                                </div>`,
-                            });
-                        }, 100);
+                        sendInvitationEmailToExist(
+                            request.user,
+                            contributor,
+                            newDoc,
+                        );
                     }
                     //  send notification to users who are invited whether those status are not active
                     NotificationModel({
@@ -611,7 +546,7 @@ const documentRouter = (fastify, opts, done) => {
                                 variant: 'subtitle1',
                             },
                             {
-                                text: ' deleted you from document - ',
+                                text: ' deleted you from document. Document: ',
                                 variant: '',
                             },
                             { text: newDoc.name, variant: 'subtitle1' },
@@ -631,7 +566,7 @@ const documentRouter = (fastify, opts, done) => {
                             ),
                             variant: 'subtitle1',
                         },
-                        { text: ' from your document - ' },
+                        { text: ' from your document. Document: ' },
                         { text: newDoc.name, variant: 'subtitle1' },
                     ],
                 }).save();
@@ -721,6 +656,8 @@ const documentRouter = (fastify, opts, done) => {
                             { text: request.user.name, variant: 'subtitle1' },
                             { text: ' was ', variant: '' },
                             { text: status, variant: 'subtitle1' },
+                            { text: ' Document: ', variant: '' },
+                            { text: doc.name, variant: 'subtitle1' },
                         ],
                     }).save();
 

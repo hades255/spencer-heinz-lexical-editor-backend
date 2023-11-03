@@ -35,7 +35,6 @@ const UserSchema = new Schema(
         mobilePhone: {
             type: String,
             required: true,
-            unique: true,
         },
         workPhone: {
             type: String,

@@ -3,7 +3,7 @@ import DocumentModel from '../models/Document.js';
 import UserModel from '../models/User.js';
 import InviteModel from '../models/invite.js';
 import { HTTP_RES_CODE, USER_STATUS } from '../shared/constants.js';
-import { createAuthToken, sendEmail } from '../shared/helpers.js';
+import { createAuthToken } from '../shared/helpers.js';
 
 const inviteRouter = (fastify, opts, done) => {
     fastify.get('/mail', async (request, reply) => {

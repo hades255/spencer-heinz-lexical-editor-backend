@@ -198,21 +198,28 @@ const notificationRouter = (fastify, opts, done) => {
     //  socket
     fastify.get('/socket', { websocket: true }, (connection, req) => {
         let user = null;
+        let status = 1;
         let date = new Date('2023-10-01T00:00:00Z');
         connection.socket.on('message', (message) => {
             // Handle incoming messages from the client
+            status = 1;
             user = JSON.parse(message.toString());
         });
 
         connection.socket.on('close', () => {
             user = null;
+            status = 0;
         });
 
         const notificationTimer = async () => {
             try {
+                if (!status || status > 5) return;
+                setTimeout(notificationTimer, 3000);
+                if (!user) {
+                    status++;
+                    return;
+                }
                 if (connection.socket.readyState === connection.socket.OPEN) {
-                    setTimeout(notificationTimer, 3000);
-                    if (!user) return;
                     const notifications = await NotificationModel.find({
                         $or: [{ to: { $eq: '' } }, { to: { $eq: user._id } }],
                         createdAt: { $gt: date },
