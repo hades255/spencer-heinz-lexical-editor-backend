@@ -331,8 +331,8 @@ const userRouter = (fastify, opts, done) => {
                     sendEmail({
                         from: process.env.SERVER_MAIL_ADDRESS,
                         to: user.email,
-                        subject: `Your role has been set as ${status}.`,
-                        html: `Your role has been set as ${status}.`,
+                        subject: `Your role has been set as ${role}.`,
+                        html: `Your role has been set as ${role}.`,
                     });
                 }, 100);
 

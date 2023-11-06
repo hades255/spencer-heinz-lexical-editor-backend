@@ -95,20 +95,53 @@ export const sendInvitationEmailToExist = (from, to, doc) => {
             from: process.env.SERVER_MAIL_ADDRESS,
             to: to.email,
             subject: `${from.name} invited you to his document.`,
-            html: `Title: ${doc.name} <br/> Description: ${
-                doc.description
-            } <br/><br/> 
-            <div style="display: flex; justify-content: center;">
-              <div><a
-              href="${process.env.FRONTEND_ADDRESS || ''}/document/${doc._id}"
-              style="
-                padding: 5px;
-                border: 1px solid blue;
-                border-radius: 5px;
-                background-color: blue;
-                color: white;
-              "
-              >Click Here</a>to contribute!</div>
+            html: `
+            <div style="display: flex; justify-content: center">
+              <div
+                style="
+                  max-width: 600px;
+                  border: 2px solid #1677ff;
+                  padding: 12px;
+                  border-radius: 20px;
+                  background-color: lightblue;
+                "
+              >
+                <h4 style="text-align: center">
+                  <a
+                    title="${from.email}"
+                    href="mailto:${from.email}"
+                    style="text-decoration: none"
+                    >${from.name}</a
+                  >
+                  invited you to document.
+                </h4>
+                <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+                <p><b>Title:</b> ${doc.name}</p>
+                <p>
+                  <b>Description: </b> ${doc.description}
+                </p>
+                <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+                <br />
+                <div style="display: flex; justify-content: center">
+                  <div>
+                    Click
+                    <a
+                      href="${process.env.FRONTEND_ADDRESS || ''}/document/${
+                          doc._id
+                      }?email=${to.email}"
+                      style="
+                        padding: 8px;
+                        background-color: #1677ff;
+                        color: white;
+                        border-radius: 8px;
+                        text-decoration: none;
+                      "
+                      >HERE</a
+                    >
+                    to contribute!
+                  </div>
+                </div>
+              </div>
             </div>`,
         });
     }, 100);
@@ -119,21 +152,53 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
             from: process.env.SERVER_MAIL_ADDRESS,
             to: to.email,
             subject: `${from.name} invited you to his document.`,
-            html: `Title: ${doc.name} <br/> Description: ${
-                doc.description
-            } <br/><br/> 
-            <div style="display: flex; justify-content: center;">
-              <div><a
-              href="${process.env.FRONTEND_ADDRESS || ''}/invites/${token}"
+            html: `<div style="display: flex; justify-content: center">
+            <div
               style="
-                padding: 5px;
-                border: 1px solid blue;
-                border-radius: 5px;
-                background-color: blue;
-                color: white;
+                max-width: 600px;
+                border: 2px solid #1677ff;
+                padding: 12px;
+                border-radius: 20px;
+                background-color: lightblue;
               "
-              >Click Here</a>to contribute!</div>
-            </div>`,
+            >
+              <h4 style="text-align: center">
+                <a
+                  title="${from.email}"
+                  href="mailto:${from.email}"
+                  style="text-decoration: none"
+                  >${from.name}</a
+                >
+                invited you to document.
+              </h4>
+              <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+              <p><b>Title:</b> ${doc.name}</p>
+              <p>
+                <b>Description: </b> ${doc.description}
+              </p>
+              <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+              <br />
+              <div style="display: flex; justify-content: center">
+                <div>
+                  Click
+                  <a
+                    href="${
+                        process.env.FRONTEND_ADDRESS || ''
+                    }/invites/${token}"
+                    style="
+                      padding: 8px;
+                      background-color: #1677ff;
+                      color: white;
+                      border-radius: 8px;
+                      text-decoration: none;
+                    "
+                    >HERE</a
+                  >
+                  to contribute!
+                </div>
+              </div>
+            </div>
+          </div>`,
         });
     }, 100);
 };

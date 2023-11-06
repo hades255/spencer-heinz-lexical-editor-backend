@@ -242,10 +242,10 @@ const notificationRouter = (fastify, opts, done) => {
                         .sort({ createdAt: -1 })
                         .exec();
                     date = new Date(Date.now());
-                    if (notifications.length || messages.length)
-                        connection.socket.send(
-                            JSON.stringify({ notifications, messages }),
-                        );
+                    // if (notifications.length || messages.length)
+                    connection.socket.send(
+                        JSON.stringify({ notifications, messages }),
+                    );
                 }
             } catch (error) {
                 console.log(error);
