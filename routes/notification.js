@@ -111,7 +111,7 @@ const notificationRouter = (fastify, opts, done) => {
             try {
                 const notification = await NotificationModel.findOne({
                     to: request.query.user,
-                    redirect: '/document/' + request.query.document,
+                    redirect: request.query.document,
                     status: NOTIFICATION_STATUS.UNREAD,
                     type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
                 });
@@ -175,8 +175,10 @@ const notificationRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
+                const { clearRedirect } = request.body;
                 await NotificationModel.findByIdAndUpdate(request.params._id, {
                     status: NOTIFICATION_STATUS.READ,
+                    ...(clearRedirect ? { redirect: '' } : {}),
                 });
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,

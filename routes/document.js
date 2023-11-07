@@ -215,7 +215,7 @@ const documentRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             const { uniqueId } = request.params;
-            const { name, description } = request.body;
+            const { name, description, contributors, invites } = request.body;
             try {
                 const document = await DocumentModel.findById(uniqueId)
                     .populate(['creator'])
@@ -230,6 +230,8 @@ const documentRouter = (fastify, opts, done) => {
 
                 document.name = name;
                 document.description = description;
+                document.contributors = contributors;
+                document.invites = invites;
                 await document.save();
 
                 return reply.send({
@@ -312,7 +314,7 @@ const documentRouter = (fastify, opts, done) => {
                         NotificationModel({
                             to: contributor._id,
                             type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
-                            redirect: '/document/' + newDoc._id,
+                            redirect: newDoc._id,
                             data: [
                                 {
                                     text: request.user.name,
@@ -329,7 +331,6 @@ const documentRouter = (fastify, opts, done) => {
                     NotificationModel({
                         to: request.user._id,
                         type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
-                        status: NOTIFICATION_STATUS.UNREAD,
                         data: [
                             { text: 'You', variant: 'subtitle1' },
                             { text: ' invited ' },
@@ -343,6 +344,7 @@ const documentRouter = (fastify, opts, done) => {
                             { text: newDoc.name, variant: 'subtitle1' },
                             { text: '. Wait for the response' },
                         ],
+                        redirect: newDoc._id,
                     }).save();
 
                     if (nonActiveUsers.length) {
@@ -441,7 +443,7 @@ const documentRouter = (fastify, opts, done) => {
                     NotificationModel({
                         to: contributor._id,
                         type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
-                        redirect: '/document/' + newDoc._id,
+                        redirect: newDoc._id,
                         data: [
                             {
                                 text: request.user.name,
@@ -460,7 +462,6 @@ const documentRouter = (fastify, opts, done) => {
                     NotificationModel({
                         to: request.user._id,
                         type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
-                        status: NOTIFICATION_STATUS.UNREAD,
                         data: [
                             { text: 'You', variant: 'subtitle1' },
                             { text: ' invited ' },
@@ -474,6 +475,7 @@ const documentRouter = (fastify, opts, done) => {
                             { text: newDoc.name, variant: 'subtitle1' },
                             { text: ' Wait for the response' },
                         ],
+                        redirect: newDoc._id,
                     }).save();
                 }
                 //  if there is any user that status is not active now, send message to admin to handle this
@@ -569,6 +571,7 @@ const documentRouter = (fastify, opts, done) => {
                         { text: ' from your document. Document: ' },
                         { text: newDoc.name, variant: 'subtitle1' },
                     ],
+                    redirect: newDoc._id,
                 }).save();
 
                 return reply.send({
@@ -649,16 +652,16 @@ const documentRouter = (fastify, opts, done) => {
                             status === 'accept'
                                 ? NOTIFICATION_TYPES.DOCUMENT_INVITE_ACCEPT
                                 : NOTIFICATION_TYPES.DOCUMENT_INVITE_REJECT,
-                        redirect: '/document/' + doc._id,
                         data: [
                             { text: 'Your', variant: 'subtitle1' },
                             { text: ' invitation to ' },
                             { text: request.user.name, variant: 'subtitle1' },
                             { text: ' was ', variant: '' },
                             { text: status, variant: 'subtitle1' },
-                            { text: ' Document: ', variant: '' },
+                            { text: '. Document: ', variant: '' },
                             { text: doc.name, variant: 'subtitle1' },
                         ],
+                        redirect: doc._id,
                     }).save();
 
                     return reply.send({
