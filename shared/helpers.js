@@ -215,3 +215,17 @@ export const compareArrays = (A, B, key = '_id') => {
     );
     return elementsOnlyInA;
 };
+
+export const datetime = () => {
+    const currentDate = new Date();
+
+    const hours = currentDate.getHours().toString().padStart(2, '0');
+    const minutes = currentDate.getMinutes().toString().padStart(2, '0');
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = currentDate.getDate().toString().padStart(2, '0');
+
+    const formattedDateTime = `${hours}:${minutes} ${month}/${day}/${year}`;
+    console.log(formattedDateTime);
+    return formattedDateTime;
+};

@@ -28,7 +28,7 @@ const notificationRouter = (fastify, opts, done) => {
             });
         }
     });
-    //  all notifications
+    //  all notifications-/
     fastify.get(
         '/',
         {
@@ -61,7 +61,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
-    //  read notifications
+    //  read notifications-/read
     fastify.get(
         '/read',
         {
@@ -99,7 +99,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
-    //  read notification with document and user
+    //  read notification with document and user-/document
     fastify.get(
         '/document',
         {
@@ -112,7 +112,6 @@ const notificationRouter = (fastify, opts, done) => {
                 const notification = await NotificationModel.findOne({
                     to: request.query.user,
                     redirect: request.query.document,
-                    status: NOTIFICATION_STATUS.UNREAD,
                     type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
                 });
                 return reply.send({
@@ -132,7 +131,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
-    //  mark as read all
+    //  mark as read all-/
     fastify.put(
         '/',
         {
@@ -165,7 +164,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         },
     );
-    //  mark as read one
+    //  mark as read one-/:_id
     fastify.put(
         '/:_id',
         {
@@ -256,6 +255,36 @@ const notificationRouter = (fastify, opts, done) => {
 
         setTimeout(notificationTimer, 0);
     });
+    //  get one notification-/:id
+    fastify.get(
+        '/:id',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const notification = await NotificationModel.findById(
+                    request.params.id,
+                );
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        notification,
+                    },
+                    message: '',
+                });
+            } catch (error) {
+                console.log('document@get-error:', error);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
     done();
 };
 

@@ -98,7 +98,7 @@ export const YjsServer = createYjsServer({
     rooms: fastify.appData.rooms,
     docStorage: {
         loadDoc: async (docName, doc) => {
-            console.log('document loaded.');
+            console.log('document loaded.' + docName);
             const ydocPersisted = await Persistence.getYDoc(docName);
             if (ydocPersisted)
                 Y.applyUpdate(doc, Y.encodeStateAsUpdate(ydocPersisted));
