@@ -254,7 +254,7 @@ const notificationRouter = (fastify, opts, done) => {
             }
         };
 
-        setTimeout(notificationTimer, 1000);
+        setTimeout(notificationTimer, 0);
     });
     done();
 };

@@ -282,7 +282,9 @@ const documentRouter = (fastify, opts, done) => {
                 //  if want to invite users
                 if (contributors.length) {
                     let nonActiveUsers = []; //  used for get non active users from the contributors
+                    let k = 0;
                     for (let contributor of contributors) {
+                        k++;
                         if (contributor.status === USER_STATUS.INVITED) {
                             const token = generateSecretString(
                                 request.user.email,
@@ -295,18 +297,22 @@ const documentRouter = (fastify, opts, done) => {
                                 document: newDoc,
                                 token,
                             }).save();
-                            sendInvitationEmailToNew(
-                                request.user,
-                                contributor,
-                                newDoc,
-                                token,
-                            );
+                            setTimeout(() => {
+                                sendInvitationEmailToNew(
+                                    request.user,
+                                    contributor,
+                                    newDoc,
+                                    token,
+                                );
+                            }, k * 1000);
                         } else {
-                            sendInvitationEmailToExist(
-                                request.user,
-                                contributor,
-                                newDoc,
-                            );
+                            setTimeout(() => {
+                                sendInvitationEmailToExist(
+                                    request.user,
+                                    contributor,
+                                    newDoc,
+                                );
+                            }, k * 1000);
                             if (contributor.status !== USER_STATUS.ACTIVE) {
                                 nonActiveUsers.push(contributor);
                             }
@@ -406,7 +412,9 @@ const documentRouter = (fastify, opts, done) => {
                 ];
                 newDoc.save();
                 let nonActiveUsers = [];
+                let k = 0;
                 for (let contributor of contributors) {
+                    k++;
                     if (contributor.status === USER_STATUS.INVITED) {
                         //  send invitation email to manually created user
                         const token = generateSecretString(
@@ -422,22 +430,26 @@ const documentRouter = (fastify, opts, done) => {
                         }).save();
                         //  send email to invited user who are not registered yet.
                         //  sending email part must be in setTimeout because that cause error.
-                        sendInvitationEmailToNew(
-                            request.user,
-                            contributor,
-                            newDoc,
-                            token,
-                        );
+                        setTimeout(() => {
+                            sendInvitationEmailToNew(
+                                request.user,
+                                contributor,
+                                newDoc,
+                                token,
+                            );
+                        }, k * 1000);
                     } else {
                         if (contributor.status !== USER_STATUS.ACTIVE) {
                             nonActiveUsers.push(contributor);
                         }
                         //  send email to exist user to join the document.
-                        sendInvitationEmailToExist(
-                            request.user,
-                            contributor,
-                            newDoc,
-                        );
+                        setTimeout(() => {
+                            sendInvitationEmailToExist(
+                                request.user,
+                                contributor,
+                                newDoc,
+                            );
+                        }, k * 1000);
                     }
                     //  send notification to users who are invited whether those status are not active
                     NotificationModel({
@@ -730,7 +742,8 @@ const documentRouter = (fastify, opts, done) => {
             try {
                 const { socket } = connection;
                 const whenAuthorized = await authorize(socket, request).catch(
-                    () => {
+                    (e) => {
+                        console.log(e);
                         connection.close(4001);
                         return false;
                     },
