@@ -77,8 +77,9 @@ fastify.decorate('appData', {
 });
 
 const observerFunc = (event, txn) => {
+    console.log(event);
     const docName = getDocNameByYDoc(fastify.appData.rooms, event.target.doc);
-    // console.log(docName)
+    console.log(docName);
 
     // console.log(event.target.__proto__)
     // console.log(event.target._item.id, event.target._item.origin, event?.changes?.delta)
@@ -120,7 +121,7 @@ export const YjsServer = createYjsServer({
             Persistence.storeUpdate(docName, Y.encodeStateAsUpdate(doc));
         },
         onUpdate: async (docName, updatedArray, doc) => {
-            console.log('document updated.');
+            console.log('document updated.' + docName);
             // validation for updatedArray
             // Persistence.storeUpdate(docName, updatedArray);
 
@@ -128,12 +129,14 @@ export const YjsServer = createYjsServer({
             // const yxmlTextPersisted = ydocPersisted.get('root', Y.XmlElement);
 
             // const yText = doc.getText();
+            // console.log(updatedArray);
             // const undoManager = new Y.UndoManager(yText)
             Y.applyUpdate(doc, updatedArray);
             // console.log(yxmlText.firstChild._map.get('__type').content.getContent().toString())
             // yxmlText.observe(event => { console.log(event.changes.delta) })
             const rootElement = GlobalYjsData.getRootElement(docName);
             // const rootElement = doc.get('root', Y.XmlElement)
+            // console.log(doc.get('root', Y.XmlElement))
             rootElement?.forEach((value) => {
                 // console.log(value._map.get('__type').content.getContent().toString())
 
@@ -144,12 +147,13 @@ export const YjsServer = createYjsServer({
                  * ! 2. if got, attach event listener and undomanager to it
                  * */
                 // console.log(value.toDelta())
-                // console.log(undoManager.canUndo())
+                // console.log(value._item.id)
                 value.unobserve(observerFunc);
                 value.observe(observerFunc);
                 if (!GlobalYjsData.getValidationFlag(docName)) {
                     const undoManager =
-                        GlobalYjsData.getRootUndoManager(docName);
+                    GlobalYjsData.getRootUndoManager(docName);
+                    console.log(undoManager.canUndo())
                     undoManager.undo();
                 }
             });

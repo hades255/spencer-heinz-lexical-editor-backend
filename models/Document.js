@@ -26,29 +26,6 @@ const DocumentSchema = new Schema(
                 select: '_id name email avatar role status',
             },
         },
-        contributors: [
-            {
-                _id: {
-                    type: String,
-                    default: '',
-                },
-                name: {
-                    type: String,
-                    default: '',
-                },
-                email: {
-                    type: String,
-                    default: '',
-                },
-                avatar: {
-                    type: String,
-                    default: '',
-                },
-                date: {
-                    type: Date,
-                },
-            },
-        ],
         invites: [
             {
                 _id: {

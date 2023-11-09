@@ -20,7 +20,7 @@ import InviteModel from '../models/invite.js';
 
 export const update = async (request, reply) => {
     const { uniqueId } = request.params;
-    const { name, description, contributors, invites, a, r } = request.body;
+    const { name, description, invites, a, r } = request.body;
     try {
         const document = await DocumentModel.findById(uniqueId)
             .populate(['creator'])
@@ -35,9 +35,10 @@ export const update = async (request, reply) => {
 
         document.name = name;
         document.description = description;
-        document.contributors = contributors;
         document.invites = invites;
         await document.save();
+        let _invites = [];
+        let _notifications = [];
         if (a.length !== 0) {
             let k = 0;
             for (let contributor of a) {
@@ -48,12 +49,12 @@ export const update = async (request, reply) => {
                         contributor.email,
                         document._id,
                     );
-                    InviteModel({
+                    _invites.push({
                         creator: request.user,
                         contributor,
                         document,
                         token,
-                    }).save();
+                    });
                     setTimeout(() => {
                         sendInvitationEmailToNew(
                             request.user,
@@ -70,7 +71,7 @@ export const update = async (request, reply) => {
                             document,
                         );
                     }, k * 1000);
-                    NotificationModel({
+                    _notifications.push({
                         to: contributor._id,
                         type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
                         redirect: document._id,
@@ -86,10 +87,10 @@ export const update = async (request, reply) => {
                             { text: 'Document: ' },
                             { text: document.name },
                         ],
-                    }).save();
+                    });
                 }
             }
-            NotificationModel({
+            _notifications.push({
                 to: request.user._id,
                 type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
                 data: [
@@ -109,11 +110,11 @@ export const update = async (request, reply) => {
                     { text: document.name },
                 ],
                 redirect: document._id,
-            }).save();
+            });
         }
         if (r.length !== 0) {
             for (let contributor of r) {
-                NotificationModel({
+                _notifications.push({
                     to: contributor._id,
                     type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
                     data: [
@@ -133,9 +134,9 @@ export const update = async (request, reply) => {
                         { text: 'Document: ' },
                         { text: document.name },
                     ],
-                }).save();
+                });
             }
-            NotificationModel({
+            _notifications.push({
                 to: request.user._id,
                 type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
                 status: NOTIFICATION_STATUS.UNREAD,
@@ -154,7 +155,13 @@ export const update = async (request, reply) => {
                     { text: document.name },
                 ],
                 redirect: document._id,
-            }).save();
+            });
+        }
+        if (_invites.length) {
+            InviteModel.insertMany(_invites);
+        }
+        if (_notifications.length) {
+            NotificationModel.insertMany(_notifications);
         }
 
         return reply.send({
@@ -175,13 +182,8 @@ export const update = async (request, reply) => {
 };
 
 export const create = async (request, reply) => {
-    const {
-        name,
-        description,
-        initialText,
-        contributors: incontributors,
-    } = request.body;
-    const contributors = incontributors.filter(
+    const { name, description, initialText, invites: ninvites } = request.body;
+    const invites = ninvites.filter(
         (item) => item.email !== request.user.email,
     );
     try {
@@ -189,15 +191,16 @@ export const create = async (request, reply) => {
             name,
             description,
             initialText,
-            invites: contributors,
-            contributors: [],
+            invites: invites,
             creator: request.user._id,
         }).save();
         //  if want to invite users
-        if (contributors.length) {
-            let nonActiveUsers = []; //  used for get non active users from the contributors
+        let _invites = [];
+        let _notifications = [];
+        if (invites.length) {
+            let nonActiveUsers = []; //  used for get non active users from the invites
             let k = 0;
-            for (let contributor of contributors) {
+            for (let contributor of invites) {
                 k++;
                 if (contributor.status === USER_STATUS.INVITED) {
                     const token = generateSecretString(
@@ -205,12 +208,12 @@ export const create = async (request, reply) => {
                         contributor.email,
                         newDoc._id,
                     );
-                    InviteModel({
+                    _invites.push({
                         creator: request.user,
                         contributor,
                         document: newDoc,
                         token,
-                    }).save();
+                    });
                     setTimeout(() => {
                         sendInvitationEmailToNew(
                             request.user,
@@ -230,7 +233,7 @@ export const create = async (request, reply) => {
                     if (contributor.status !== USER_STATUS.ACTIVE) {
                         nonActiveUsers.push(contributor);
                     }
-                    NotificationModel({
+                    _notifications.push({
                         to: contributor._id,
                         type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
                         redirect: newDoc._id,
@@ -246,23 +249,21 @@ export const create = async (request, reply) => {
                             { text: 'Document: ' },
                             { text: newDoc.name },
                         ],
-                    }).save();
+                    });
                 }
             }
-            NotificationModel({
+            _notifications.push({
                 to: request.user._id,
                 type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
                 data: [
                     { text: 'Invited: ', variant: 'subtitle1' },
                     {
-                        text: nameSentence(
-                            contributors.map((item) => item.name),
-                        ),
+                        text: nameSentence(invites.map((item) => item.name)),
                         variant: 'subtitle1',
                     },
                     {
                         text: ` ${
-                            contributors.length === 1 ? 'was' : 'were'
+                            invites.length === 1 ? 'was' : 'were'
                         } received by `,
                     },
                     { text: 'You', variant: 'subtitle1' },
@@ -271,7 +272,14 @@ export const create = async (request, reply) => {
                     { text: newDoc.name },
                 ],
                 redirect: newDoc._id,
-            }).save();
+            });
+
+            if (_invites.length) {
+                InviteModel.insertMany(_invites);
+            }
+            if (_notifications.length) {
+                NotificationModel.insertMany(_notifications);
+            }
 
             if (nonActiveUsers.length) {
                 MessageModel({
@@ -307,18 +315,14 @@ export const create = async (request, reply) => {
 };
 
 export const clearInvite = async (request, reply) => {
-    const { contributors } = request.body;
+    const { invites } = request.body;
     try {
         const newDoc = await DocumentModel.findById(request.params.uniqueId);
-        newDoc.invites = compareArrays(newDoc.invites, contributors, 'email');
-        newDoc.contributors = compareArrays(
-            newDoc.contributors,
-            contributors,
-            'email',
-        );
+        newDoc.invites = compareArrays(newDoc.invites, invites, 'email');
         newDoc.save();
-        for (let contributor of contributors) {
-            NotificationModel({
+        let _notifications = [];
+        for (let contributor of invites) {
+            _notifications.push({
                 to: contributor._id,
                 type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
                 data: [
@@ -335,21 +339,21 @@ export const clearInvite = async (request, reply) => {
                     { text: 'Document: ' },
                     { text: newDoc.name },
                 ],
-            }).save();
+            });
         }
-        NotificationModel({
+        _notifications.push({
             to: request.user._id,
             type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
             status: NOTIFICATION_STATUS.UNREAD,
             data: [
                 { text: 'Deleted: ', variant: 'subtitle1' },
                 {
-                    text: nameSentence(contributors.map((item) => item.name)),
+                    text: nameSentence(invites.map((item) => item.name)),
                     variant: 'subtitle1',
                 },
                 {
                     text: ` ${
-                        contributors.length === 1 ? 'was' : 'were'
+                        invites.length === 1 ? 'was' : 'were'
                     } deleted by `,
                 },
                 { text: 'You', variant: 'subtitle1' },
@@ -358,7 +362,11 @@ export const clearInvite = async (request, reply) => {
                 { text: newDoc.name },
             ],
             redirect: newDoc._id,
-        }).save();
+        });
+
+        if (_notifications.length) {
+            NotificationModel.insertMany(_notifications);
+        }
 
         return reply.send({
             code: HTTP_RES_CODE.SUCCESS,
@@ -378,12 +386,12 @@ export const clearInvite = async (request, reply) => {
 };
 
 export const setInvite = async (request, reply) => {
-    const { contributors } = request.body;
+    const { invites } = request.body;
     try {
         const newDoc = await DocumentModel.findById(request.params.uniqueId);
         newDoc.invites = [
             ...newDoc.invites,
-            ...contributors.map((item) => ({
+            ...invites.map((item) => ({
                 ...item,
                 invitor: request.user,
             })),
@@ -391,7 +399,9 @@ export const setInvite = async (request, reply) => {
         newDoc.save();
         let nonActiveUsers = [];
         let k = 0;
-        for (let contributor of contributors) {
+        let _invites = [];
+        let _notifications = [];
+        for (let contributor of invites) {
             k++;
             if (contributor.status === USER_STATUS.INVITED) {
                 //  send invitation email to manually created user
@@ -400,12 +410,12 @@ export const setInvite = async (request, reply) => {
                     contributor.email,
                     newDoc._id,
                 );
-                InviteModel({
+                _invites.push({
                     creator: request.user,
                     contributor,
                     document: newDoc,
                     token,
-                }).save();
+                });
                 //  send email to invited user who are not registered yet.
                 //  sending email part must be in setTimeout because that cause error.
                 setTimeout(() => {
@@ -429,7 +439,7 @@ export const setInvite = async (request, reply) => {
                     );
                 }, k * 1000);
                 //  send notification to users who are invited whether those status are not active
-                NotificationModel({
+                _notifications.push({
                     to: contributor._id,
                     type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
                     redirect: newDoc._id,
@@ -445,25 +455,23 @@ export const setInvite = async (request, reply) => {
                         { text: 'Document: ' },
                         { text: newDoc.name },
                     ],
-                }).save();
+                });
             }
         }
-        if (contributors.length !== 0) {
+        if (invites.length !== 0) {
             //  send a notification to creator to wait his contributors to join
-            NotificationModel({
+            _notifications.push({
                 to: request.user._id,
                 type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
                 data: [
                     { text: 'Invited: ', variant: 'subtitle1' },
                     {
-                        text: nameSentence(
-                            contributors.map((item) => item.name),
-                        ),
+                        text: nameSentence(invites.map((item) => item.name)),
                         variant: 'subtitle1',
                     },
                     {
                         text: ` ${
-                            contributors.length === 1 ? 'was' : 'were'
+                            invites.length === 1 ? 'was' : 'were'
                         } received by `,
                     },
                     { text: 'You', variant: 'subtitle1' },
@@ -472,7 +480,13 @@ export const setInvite = async (request, reply) => {
                     { text: newDoc.name },
                 ],
                 redirect: newDoc._id,
-            }).save();
+            });
+        }
+        if (_invites.length) {
+            InviteModel.insertMany(_invites);
+        }
+        if (_notifications.length) {
+            NotificationModel.insertMany(_notifications);
         }
         //  if there is any user that status is not active now, send message to admin to handle this
         if (nonActiveUsers.length) {
@@ -510,40 +524,23 @@ export const handleInvite = async (request, reply) => {
     const { id, status } = request.body;
     try {
         let doc = await DocumentModel.findById(id);
-        let flag1 = false;
-        let flag2 = false;
+        let flag = false;
         for (let invite of doc.invites) {
-            if (invite._id.toString() === request.user._id.toString()) {
-                flag1 = true;
+            if (
+                invite._id.toString() === request.user._id.toString() &&
+                invite.reply === 'pending'
+            ) {
+                flag = true;
                 break;
             }
         }
-        for (let contributor of doc.contributors) {
-            if (contributor._id.toString() === request.user._id.toString()) {
-                flag2 = true;
-                break;
-            }
-        }
-        if (flag1 && !flag2) {
-            if (status === 'accept') {
-                doc.contributors = [
-                    ...doc.contributors,
-                    {
-                        ...request.user,
-                        date: new Date(),
-                    },
-                ];
-            }
+        if (flag) {
             doc.invites = doc.invites.map((invite) => ({
                 ...invite,
                 reply:
                     invite._id.toString() === request.user._id.toString()
                         ? status
                         : invite.reply,
-                date:
-                    invite._id.toString() === request.user._id.toString()
-                        ? new Date()
-                        : invite.date,
             }));
             await doc.save();
 

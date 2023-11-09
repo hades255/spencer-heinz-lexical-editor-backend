@@ -1245,6 +1245,13 @@ lodash@^4.17.21:
   resolved "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
+lowdb@^6.1.1:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/lowdb/-/lowdb-6.1.1.tgz#fb3c66a116b0ef799641f677676071661f6804f4"
+  integrity sha512-HO13FCxI8SCwfj2JRXOKgXggxnmfSc+l0aJsZ5I34X3pwzG/DPBSKyKu3Zkgg/pNmx854SVgE2la0oUeh6wzNw==
+  dependencies:
+    steno "^3.1.1"
+
 lru-cache@^6.0.0:
   version "6.0.0"
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-6.0.0.tgz"
@@ -1825,6 +1832,11 @@ steed@^1.1.3:
     fastq "^1.3.0"
     fastseries "^1.7.0"
     reusify "^1.0.0"
+
+steno@^3.1.1:
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/steno/-/steno-3.1.1.tgz#713dad214ec673f7a3cbb7c0f318dba4be398490"
+  integrity sha512-B7c6EVH7oEiaMRW36SjUnktkDwp/qd4pQiduylyiqvcZEZDeX0IIFZRBZdwO/RaVo60M0wkDwC0e8yeKaR4VGg==
 
 "string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.2.3:
   version "4.2.3"

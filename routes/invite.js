@@ -28,66 +28,6 @@ const inviteRouter = (fastify, opts, done) => {
             });
         }
     });
-    fastify.get('/mails', async (request, reply) => {
-        try {
-            let arr = [
-                {
-                    from: process.env.SERVER_MAIL_ADDRESS,
-                    to: 'hades.255@outlook.com',
-                    subject: `invited you to his document.`,
-                    html: `<a href="${process.env.FRONTEND_ADDRESS}">Click Here</a>`,
-                },
-                {
-                    from: process.env.SERVER_MAIL_ADDRESS,
-                    to: 'hades.255@outlook.com',
-                    subject: `invited you to his document.`,
-                    html: `<a href="${process.env.FRONTEND_ADDRESS}">Click Here</a>`,
-                },
-                {
-                    from: process.env.SERVER_MAIL_ADDRESS,
-                    to: 'hades.255@outlook.com',
-                    subject: `invited you to his document.`,
-                    html: `<a href="${process.env.FRONTEND_ADDRESS}">Click Here</a>`,
-                },
-                {
-                    from: process.env.SERVER_MAIL_ADDRESS,
-                    to: 'hades.255@outlook.com',
-                    subject: `invited you to his document.`,
-                    html: `<a href="${process.env.FRONTEND_ADDRESS}">Click Here</a>`,
-                },
-                {
-                    from: process.env.SERVER_MAIL_ADDRESS,
-                    to: 'hades.255@outlook.com',
-                    subject: `invited you to his document.`,
-                    html: `<a href="${process.env.FRONTEND_ADDRESS}">Click Here</a>`,
-                },
-            ];
-            const sendM = (mails) => {
-                sendEmail(mails[mails.length - 1]);
-                mails.pop();
-                if (mails.length) {
-                    setTimeout(() => {
-                        sendM(mails);
-                    }, [300]);
-                }
-            };
-            setTimeout(() => {
-                sendM(arr);
-            }, [300]);
-
-            return reply.code(404).send({
-                code: HTTP_RES_CODE.ERROR,
-                message: 'no invitation found',
-            });
-        } catch (error) {
-            console.log('invite@get-error:', error);
-            return reply.code(500).send({
-                code: HTTP_RES_CODE.ERROR,
-                data: { error },
-                message: 'Unexpected Server Error Occured.',
-            });
-        }
-    });
     fastify.get('/:token', async (request, reply) => {
         try {
             const invite = await InviteModel.findOne({
@@ -154,30 +94,6 @@ const inviteRouter = (fastify, opts, done) => {
                 user.status = USER_STATUS.ACTIVE;
                 user.password = request.body.password;
                 user.save();
-                //  get document that invites the user
-                // const document = await DocumentModel.findById(
-                //     invite.document._id,
-                // );
-                // if (
-                //     !document.contributors.find(
-                //         (item) => item._id === invite.contributor._id,
-                //     )
-                // )
-                //     document.contributors = [...document.contributors, user];
-                // document.invites = document.invites.map((item) => ({
-                //     ...item,
-                //     reply:
-                //         item._id.toString() ===
-                //         invite.contributor._id.toString()
-                //             ? 'accept'
-                //             : item.reply,
-                //     date:
-                //         item._id.toString() ===
-                //         invite.contributor._id.toString()
-                //             ? new Date()
-                //             : item.date,
-                // }));
-                // document.save();
                 //  make user login
                 const serviceToken = createAuthToken(user);
                 //  set invite status

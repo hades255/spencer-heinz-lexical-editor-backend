@@ -1,3 +1,4 @@
+import * as Y from 'yjs';
 import jwt from 'jsonwebtoken';
 import { YjsServer, fastifyPassport } from '../app.js';
 import DocumentModel from '../models/Document.js';
@@ -45,7 +46,40 @@ const documentRouter = (fastify, opts, done) => {
         async (request, reply) => {
             try {
                 const documents = await DocumentModel.find({})
-                    .populate(['creator', 'contributors'])
+                    .populate(['creator'])
+                    // .sort({ updatedAt: -1 })
+                    .exec();
+
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {
+                        documents: documents,
+                    },
+                    message: '',
+                });
+            } catch (e) {
+                console.log('document@get-error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
+    //  get notifiaction with documents and invited user-/:id/notifications
+    fastify.get(
+        '/:id/notifications',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const documents = await DocumentModel.find({})
+                    .populate(['creator'])
                     // .sort({ updatedAt: -1 })
                     .exec();
 
@@ -89,10 +123,11 @@ const documentRouter = (fastify, opts, done) => {
                             (item) =>
                                 item.creator._id.toString() ===
                                     request.user._id.toString() ||
-                                item.contributors.find(
+                                item.invites.find(
                                     (contributor) =>
                                         contributor._id.toString() ===
-                                        request.user._id.toString(),
+                                            request.user._id.toString() &&
+                                        contributor.reply === 'accept',
                                 ),
                         ),
                     },
@@ -109,7 +144,7 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
-    //  '/users/:uniqueId'
+    //  '/users/:uniqueId' get users from the room
     fastify.get(
         '/users/:uniqueId',
         {
@@ -136,7 +171,7 @@ const documentRouter = (fastify, opts, done) => {
                 for (let _room of GlobalRooms.values()) {
                     if (_room.name === uniqueId) {
                         let users = [];
-                        for (let conn of _room.conns.keys()) {
+                        for (let conn of _room.connections) {
                             users.push(conn.user);
                         }
                         room = {
@@ -310,18 +345,38 @@ const documentRouter = (fastify, opts, done) => {
         },
     );
 
-    // fastify.get('/save/:name', (request, response) => {
-    //     try {
-    //         const { name } = request.params;
-    //         const room = GlobalRooms.get(name);
+    fastify.get(
+        '/save/:name',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        (request, response) => {
+            try {
+                const { name } = request.params;
+                const room = GlobalRooms.get(name);
+                // const room = YjsServer.getRoom(name);
+                if (room) {
+                    const userId = request.user.userId;
+                    const status = '1';
+                    if (status) {
+                        room.userData.set(userId, status);
+                    } else {
+                        const userStatus = room.userData.get(userId);
+                        reply.send({ status: userStatus });
+                    }
 
-    //         response.send({
-    //             data: 'ok',
-    //         });
-    //     } catch (e) {
-    //         console.log('document@save-error:', e);
-    //     }
-    // });
+                    response.send({ message: 'Joined room successfully' });
+                } else {
+                    response.status(404).send({ message: 'Room not found' });
+                }
+            } catch (e) {
+                console.log('document@save-error:', e);
+                response.status(404).send({ message: 'Room not found' });
+            }
+        },
+    );
 
     const authorize = async (socket, request) => {
         // option 1) use a param in the request.url
