@@ -16,6 +16,7 @@ const documentRouter = (fastify, opts, done) => {
     /**
      * @description get rooms initiazed
      */
+    const Rooms = fastify.appData.userrooms;
     const GlobalRooms = fastify.appData.rooms;
     fastify.get('/rooms', (req, res) => {
         let rooms = [];
@@ -238,7 +239,7 @@ const documentRouter = (fastify, opts, done) => {
                 session: false,
             }),
         },
-        update,
+        update(Rooms),
     );
 
     //  create a new document-/
@@ -249,7 +250,7 @@ const documentRouter = (fastify, opts, done) => {
                 session: false,
             }),
         },
-        create,
+        create(Rooms),
     );
 
     /**
@@ -262,7 +263,7 @@ const documentRouter = (fastify, opts, done) => {
                 session: false,
             }),
         },
-        setInvite,
+        setInvite(Rooms),
     );
 
     /**
@@ -275,7 +276,7 @@ const documentRouter = (fastify, opts, done) => {
                 session: false,
             }),
         },
-        clearInvite,
+        clearInvite(Rooms),
     );
 
     //  handle invitation-'/invitation'

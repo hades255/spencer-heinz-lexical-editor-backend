@@ -17,8 +17,10 @@ import DocumentModel from '../models/Document.js';
 import MessageModel from '../models/Message.js';
 import NotificationModel from '../models/Notification.js';
 import InviteModel from '../models/invite.js';
+import { userData } from '../app.js';
+import { broadcastToDoc, getUserData } from '../routes/usersRoom.js';
 
-export const update = async (request, reply) => {
+export const update = (Rooms) => async (request, reply) => {
     const { uniqueId } = request.params;
     const { name, description, invites, a, r } = request.body;
     try {
@@ -37,6 +39,19 @@ export const update = async (request, reply) => {
         document.description = description;
         document.invites = invites;
         await document.save();
+        if (Rooms.has(document._id.toString())) {
+            const room = Rooms.get(document._id.toString());
+            for (let contributor of a) {
+                room.userData.set(
+                    contributor._id.toString(),
+                    userData(contributor),
+                );
+            }
+            for (let contributor of r) {
+                room.userData.delete(contributor._id);
+            }
+            broadcastToDoc(room);
+        }
         let _invites = [];
         let _notifications = [];
         if (a.length !== 0) {
@@ -181,7 +196,7 @@ export const update = async (request, reply) => {
     }
 };
 
-export const create = async (request, reply) => {
+export const create = (Rooms) => async (request, reply) => {
     const { name, description, initialText, invites: ninvites } = request.body;
     const invites = ninvites.filter(
         (item) => item.email !== request.user.email,
@@ -198,6 +213,15 @@ export const create = async (request, reply) => {
         let _invites = [];
         let _notifications = [];
         if (invites.length) {
+            if (Rooms.has(newDoc._id.toString())) {
+                const room = Rooms.get(newDoc._id.toString());
+                for (let contributor of invites) {
+                    room.userData.set(
+                        contributor._id.toString(),
+                        userData(contributor),
+                    );
+                }
+            }
             let nonActiveUsers = []; //  used for get non active users from the invites
             let k = 0;
             for (let contributor of invites) {
@@ -314,12 +338,19 @@ export const create = async (request, reply) => {
     }
 };
 
-export const clearInvite = async (request, reply) => {
+export const clearInvite = (Rooms) => async (request, reply) => {
     const { invites } = request.body;
     try {
         const newDoc = await DocumentModel.findById(request.params.uniqueId);
         newDoc.invites = compareArrays(newDoc.invites, invites, 'email');
-        newDoc.save();
+        await newDoc.save();
+        if (Rooms.has(newDoc._id.toString())) {
+            const room = Rooms.get(newDoc._id.toString());
+            for (let contributor of invites) {
+                room.userData.delete(contributor._id);
+            }
+            broadcastToDoc(room);
+        }
         let _notifications = [];
         for (let contributor of invites) {
             _notifications.push({
@@ -385,7 +416,7 @@ export const clearInvite = async (request, reply) => {
     }
 };
 
-export const setInvite = async (request, reply) => {
+export const setInvite = (Rooms) => async (request, reply) => {
     const { invites } = request.body;
     try {
         const newDoc = await DocumentModel.findById(request.params.uniqueId);
@@ -397,6 +428,16 @@ export const setInvite = async (request, reply) => {
             })),
         ];
         newDoc.save();
+        if (Rooms.has(newDoc._id.toString())) {
+            const room = Rooms.get(newDoc._id.toString());
+            for (let contributor of invites) {
+                room.userData.set(
+                    contributor._id.toString(),
+                    userData(contributor),
+                );
+            }
+            broadcastToDoc(room);
+        }
         let nonActiveUsers = [];
         let k = 0;
         let _invites = [];

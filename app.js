@@ -21,17 +21,17 @@ import nodemailer from 'nodemailer';
 // models
 
 // routes
+import notificationRouter from './routes/notification.js';
 import documentRouter from './routes/document.js';
+import messageRouter from './routes/message.js';
+import inviteRouter from './routes/invite.js';
+import usersRoom from './routes/usersRoom.js';
 import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
-import inviteRouter from './routes/invite.js';
-import notificationRouter from './routes/notification.js';
-import messageRouter from './routes/message.js';
 
 import { initializeAuthSystem } from './middlewares/authentication.js';
 import { getDocNameByYDoc } from './shared/helpers.js';
 import DocumentModel from './models/Document.js';
-import usersRoom from './routes/usersRoom.js';
 
 export const Persistence = new LeveldbPersistence('./storage-location');
 
@@ -176,14 +176,23 @@ const createRoom = (_id, creator, invites = []) => {
     return room;
 };
 
-const userData = ({ _id, name, email, avatar, status }) => ({
+export const userData = ({
+    _id,
+    name,
+    email,
+    avatar,
+    status,
+    reply = 'accept',
+}) => ({
     _id,
     name,
     email,
     avatar,
     status,
     team: '',
+    reply,
     leader: false,
+    socket: null,
 });
 const initUserRoom = async () => {
     try {
