@@ -34,7 +34,8 @@ const inviteRouter = (fastify, opts, done) => {
                 token: request.params.token,
             });
             if (invite) {
-                if (invite.status === 'done') {
+                const user = await UserModel.findById(invite.contributor._id);
+                if (user.status !== USER_STATUS.INVITED) {
                     return reply.send({
                         code: HTTP_RES_CODE.ERROR,
                         data: {
@@ -45,7 +46,6 @@ const inviteRouter = (fastify, opts, done) => {
                         message: '',
                     });
                 }
-                const user = await UserModel.findById(invite.contributor._id);
                 const document = await DocumentModel.findById(
                     invite.document._id,
                 );

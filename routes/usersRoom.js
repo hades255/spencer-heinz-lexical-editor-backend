@@ -53,14 +53,41 @@ const usersRoom = (fastify, opts, done) => {
                 case 'new-team':
                     if (Rooms.has(roomId)) {
                         const room = Rooms.get(roomId);
-                        for (let user of room.userData.values()) {
-                            room.userData.set(user._id.toString(), {
-                                ...user,
-                                team: data.value.includes(user.email)
-                                    ? data.name
-                                    : user.team,
-                                leader: user._id === userId || user.leader,
+                        for (let user of data.value) {
+                            room.userData.set(user.toString(), {
+                                ...room.userData.get(user.toString()),
+                                team: data.name,
+                                leader: user === userId,
                             });
+                        }
+                        broadcastToDoc(room);
+                    }
+                    break;
+                case 'edit-team':
+                    if (Rooms.has(roomId)) {
+                        const room = Rooms.get(roomId);
+                        for (let user of data.a) {
+                            room.userData.set(user.toString(), {
+                                ...room.userData.get(user.toString()),
+                                team: data.name,
+                                leader: false,
+                            });
+                        }
+                        for (let user of data.r) {
+                            room.userData.set(user.toString(), {
+                                ...room.userData.get(user.toString()),
+                                team: '',
+                                leader: false,
+                            });
+                        }
+                        if (data.team) {
+                            for (let user of data.value) {
+                                room.userData.set(user.toString(), {
+                                    ...room.userData.get(user.toString()),
+                                    team: data.name,
+                                    leader: user === userId,
+                                });
+                            }
                         }
                         broadcastToDoc(room);
                     }
