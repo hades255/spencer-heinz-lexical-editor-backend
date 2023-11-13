@@ -473,6 +473,64 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    //  get favourite users
+    fastify.get(
+        '/favourite',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (req, res) => {
+            try {
+                const user = await UserModel.findById(req.user._id);
+                return res.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: user.favourite,
+                });
+            } catch (e) {
+                console.log('user@favourite-get-error:', e);
+                return res.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
+    //  set favourite users
+    fastify.put(
+        '/favourite',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (req, res) => {
+            try {
+                const { email, flag } = req.body;
+                let user = await UserModel.findById(req.user._id);
+                const f = user.favourite.filter((item) => item !== email);
+                if (flag) user.favourite = [...f, email];
+                else user.favourite = f;
+                await user.save();
+                return res.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: { email, flag },
+                    message: 'User updated successfully.',
+                });
+            } catch (e) {
+                console.log('user@favourite-set-error:', e);
+                return res.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
     done();
 };
 
