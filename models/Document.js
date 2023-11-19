@@ -21,10 +21,6 @@ const DocumentSchema = new Schema(
         creator: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
-            populate: {
-                path: 'creator',
-                select: '_id name email avatar role status',
-            },
         },
         invites: [
             {
@@ -41,6 +37,14 @@ const DocumentSchema = new Schema(
                     default: '',
                 },
                 avatar: {
+                    type: String,
+                    default: '',
+                },
+                mobilePhone: {
+                    type: String,
+                    default: '',
+                },
+                workPhone: {
                     type: String,
                     default: '',
                 },

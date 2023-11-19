@@ -44,10 +44,13 @@ const MessageSchema = new Schema(
         },
         redirect: { type: String, default: '' },
         data: [
-            {
-                text: { type: String, required: true },
-                variant: { type: String, default: '' },
-            },
+            new mongoose.Schema(
+                {
+                    text: { type: String, required: true },
+                    variant: { type: String, default: '' },
+                },
+                { _id: false },
+            ),
         ],
         attachment: {
             type: String,

@@ -17,8 +17,7 @@ import DocumentModel from '../models/Document.js';
 import MessageModel from '../models/Message.js';
 import NotificationModel from '../models/Notification.js';
 import InviteModel from '../models/invite.js';
-import { userData } from '../app.js';
-import { broadcastToDoc, getUserData } from '../routes/usersRoom.js';
+import { broadcastToDoc, createRoom, userData } from '../routes/usersRoom.js';
 
 export const update = (Rooms) => async (request, reply) => {
     const { uniqueId } = request.params;
@@ -48,7 +47,7 @@ export const update = (Rooms) => async (request, reply) => {
                 );
             }
             for (let contributor of r) {
-                room.userData.delete(contributor._id);
+                room.userData.delete(contributor._id.toString());
             }
             broadcastToDoc(room);
         }
@@ -212,16 +211,9 @@ export const create = (Rooms) => async (request, reply) => {
         //  if want to invite users
         let _invites = [];
         let _notifications = [];
+        const room = createRoom(newDoc._id, request.user, invites);
+        Rooms.set(newDoc._id.toString(), room);
         if (invites.length) {
-            if (Rooms.has(newDoc._id.toString())) {
-                const room = Rooms.get(newDoc._id.toString());
-                for (let contributor of invites) {
-                    room.userData.set(
-                        contributor._id.toString(),
-                        userData(contributor),
-                    );
-                }
-            }
             let nonActiveUsers = []; //  used for get non active users from the invites
             let k = 0;
             for (let contributor of invites) {

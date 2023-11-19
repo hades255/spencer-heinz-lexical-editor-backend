@@ -331,8 +331,7 @@ const documentRouter = (fastify, opts, done) => {
                 const { socket } = connection;
                 const whenAuthorized = await authorize(socket, request).catch(
                     (e) => {
-                        console.log(e);
-                        connection.close(4001);
+                        connection.socket.close();
                         return false;
                     },
                 );

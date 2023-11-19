@@ -94,36 +94,39 @@ const UserSchema = new Schema(
             default: USER_STATUS.PENDING,
         },
         event: [
-            {
-                status: {
-                    type: String,
-                },
-                comment: {
-                    type: String,
-                    default: '',
-                },
-                at: {
-                    type: Date,
-                },
-                by: {
-                    _id: {
+            new mongoose.Schema(
+                {
+                    status: {
+                        type: String,
+                    },
+                    comment: {
                         type: String,
                         default: '',
                     },
-                    name: {
-                        type: String,
-                        default: '',
+                    at: {
+                        type: Date,
                     },
-                    email: {
-                        type: String,
-                        default: '',
-                    },
-                    avatar: {
-                        type: String,
-                        default: '',
+                    by: {
+                        _id: {
+                            type: String,
+                            default: '',
+                        },
+                        name: {
+                            type: String,
+                            default: '',
+                        },
+                        email: {
+                            type: String,
+                            default: '',
+                        },
+                        avatar: {
+                            type: String,
+                            default: '',
+                        },
                     },
                 },
-            },
+                { _id: false },
+            ),
         ],
         favourite: [{ type: String, unique: true, required: true }],
         role: {

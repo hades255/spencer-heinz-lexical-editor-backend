@@ -25,13 +25,12 @@ import notificationRouter from './routes/notification.js';
 import documentRouter from './routes/document.js';
 import messageRouter from './routes/message.js';
 import inviteRouter from './routes/invite.js';
-import usersRoom from './routes/usersRoom.js';
+import usersRoom, { initUserRoom } from './routes/usersRoom.js';
 import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
 
 import { initializeAuthSystem } from './middlewares/authentication.js';
 import { getDocNameByYDoc } from './shared/helpers.js';
-import DocumentModel from './models/Document.js';
 
 export const Persistence = new LeveldbPersistence('./storage-location');
 
@@ -80,9 +79,9 @@ fastify.decorate('appData', {
 });
 
 const observerFunc = (event, txn) => {
-    console.log(event);
+    // console.log(event);
     const docName = getDocNameByYDoc(fastify.appData.rooms, event.target.doc);
-    console.log(docName);
+    // console.log(docName);
 
     // console.log(event.target.__proto__)
     // console.log(event.target._item.id, event.target._item.origin, event?.changes?.delta)
@@ -151,7 +150,7 @@ export const YjsServer = createYjsServer({
                  * */
                 // console.log(value.toDelta())
                 // console.log(value._item.id)
-                value.unobserve(observerFunc);
+                // value.unobserve(observerFunc);
                 value.observe(observerFunc);
                 if (!GlobalYjsData.getValidationFlag(docName)) {
                     const undoManager =
@@ -163,50 +162,8 @@ export const YjsServer = createYjsServer({
         },
     },
 });
-const createRoom = (_id, creator, invites = []) => {
-    const room = {
-        userData: new Map(), // Map to store user data
-        name: _id,
-    };
-    room.userData.set(creator._id.toString(), userData(creator));
-    for (let user of invites) {
-        room.userData.set(user._id.toString(), userData(user));
-    }
 
-    return room;
-};
-
-export const userData = ({
-    _id,
-    name,
-    email,
-    avatar,
-    status,
-    reply = 'accept',
-}) => ({
-    _id,
-    name,
-    email,
-    avatar,
-    status,
-    team: '',
-    reply,
-    leader: false,
-    socket: null,
-});
-const initUserRoom = async () => {
-    try {
-        const doucments = await DocumentModel.find({}).populate('creator');
-        doucments.forEach(({ _id, creator, invites }) => {
-            const room = createRoom(_id, creator, invites);
-            fastify.appData.userrooms.set(_id.toString(), room);
-        });
-    } catch (error) {
-        console.log(error);
-    }
-};
-
-initUserRoom();
+initUserRoom(fastify);
 // register route plugins
 fastify.register(authRouter, { prefix: '/auth' });
 fastify.register(userRouter, { prefix: '/user' });

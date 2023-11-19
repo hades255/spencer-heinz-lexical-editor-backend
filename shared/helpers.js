@@ -90,117 +90,113 @@ export const sendEmail = async (mail) => {
 };
 
 export const sendInvitationEmailToExist = (from, to, doc) => {
-    setTimeout(() => {
-        sendEmail({
-            from: process.env.SERVER_MAIL_ADDRESS,
-            to: to.email,
-            subject: `${from.name} invited you to his document.`,
-            html: `
-            <div style="display: flex; justify-content: center">
-              <div
+    return;
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `${from.name} invited you to his document.`,
+        html: `
+      <div style="display: flex; justify-content: center">
+        <div
+          style="
+            max-width: 600px;
+            border: 2px solid #1677ff;
+            padding: 12px;
+            border-radius: 20px;
+            background-color: lightblue;
+          "
+        >
+          <h4 style="text-align: center">
+            <a
+              title="${from.email}"
+              href="mailto:${from.email}"
+              style="text-decoration: none"
+              >${from.name}</a
+            >
+            invited you to document.
+          </h4>
+          <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+          <p><b>Title:</b> ${doc.name}</p>
+          <p>
+            <b>Description: </b> ${doc.description}
+          </p>
+          <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+          <br />
+          <div style="display: flex; justify-content: center">
+            <div>
+              Click
+              <a
+                href="${process.env.FRONTEND_ADDRESS || ''}/document/${
+                    doc._id
+                }?email=${to.email}"
                 style="
-                  max-width: 600px;
-                  border: 2px solid #1677ff;
-                  padding: 12px;
-                  border-radius: 20px;
-                  background-color: lightblue;
+                  padding: 8px;
+                  background-color: #1677ff;
+                  color: white;
+                  border-radius: 8px;
+                  text-decoration: none;
                 "
+                >HERE</a
               >
-                <h4 style="text-align: center">
-                  <a
-                    title="${from.email}"
-                    href="mailto:${from.email}"
-                    style="text-decoration: none"
-                    >${from.name}</a
-                  >
-                  invited you to document.
-                </h4>
-                <hr style="border: 1px solid #1677ff; border-radius: 1px" />
-                <p><b>Title:</b> ${doc.name}</p>
-                <p>
-                  <b>Description: </b> ${doc.description}
-                </p>
-                <hr style="border: 1px solid #1677ff; border-radius: 1px" />
-                <br />
-                <div style="display: flex; justify-content: center">
-                  <div>
-                    Click
-                    <a
-                      href="${process.env.FRONTEND_ADDRESS || ''}/document/${
-                          doc._id
-                      }?email=${to.email}"
-                      style="
-                        padding: 8px;
-                        background-color: #1677ff;
-                        color: white;
-                        border-radius: 8px;
-                        text-decoration: none;
-                      "
-                      >HERE</a
-                    >
-                    to contribute!
-                  </div>
-                </div>
-              </div>
-            </div>`,
-        });
-    }, 100);
+              to contribute!
+            </div>
+          </div>
+        </div>
+      </div>`,
+    });
 };
 export const sendInvitationEmailToNew = (from, to, doc, token) => {
-    setTimeout(() => {
-        sendEmail({
-            from: process.env.SERVER_MAIL_ADDRESS,
-            to: to.email,
-            subject: `${from.name} invited you to his document.`,
-            html: `<div style="display: flex; justify-content: center">
-            <div
+    return;
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `${from.name} invited you to his document.`,
+        html: `<div style="display: flex; justify-content: center">
+      <div
+        style="
+          max-width: 600px;
+          border: 2px solid #1677ff;
+          padding: 12px;
+          border-radius: 20px;
+          background-color: lightblue;
+        "
+      >
+        <h4 style="text-align: center">
+          <a
+            title="${from.email}"
+            href="mailto:${from.email}"
+            style="text-decoration: none"
+            >${from.name}</a
+          >
+          invited you to document.
+        </h4>
+        <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+        <p><b>Title:</b> ${doc.name}</p>
+        <p>
+          <b>Description: </b> ${doc.description}
+        </p>
+        <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+        <br />
+        <div style="display: flex; justify-content: center">
+          <div>
+            Click
+            <a
+              href="${process.env.FRONTEND_ADDRESS || ''}/invites/${token}"
               style="
-                max-width: 600px;
-                border: 2px solid #1677ff;
-                padding: 12px;
-                border-radius: 20px;
-                background-color: lightblue;
+                padding: 8px;
+                background-color: #1677ff;
+                color: white;
+                border-radius: 8px;
+                text-decoration: none;
               "
+              >HERE</a
             >
-              <h4 style="text-align: center">
-                <a
-                  title="${from.email}"
-                  href="mailto:${from.email}"
-                  style="text-decoration: none"
-                  >${from.name}</a
-                >
-                invited you to document.
-              </h4>
-              <hr style="border: 1px solid #1677ff; border-radius: 1px" />
-              <p><b>Title:</b> ${doc.name}</p>
-              <p>
-                <b>Description: </b> ${doc.description}
-              </p>
-              <hr style="border: 1px solid #1677ff; border-radius: 1px" />
-              <br />
-              <div style="display: flex; justify-content: center">
-                <div>
-                  Click
-                  <a
-                    href="${
-                        process.env.FRONTEND_ADDRESS || ''
-                    }/invites/${token}"
-                    style="
-                      padding: 8px;
-                      background-color: #1677ff;
-                      color: white;
-                      border-radius: 8px;
-                      text-decoration: none;
-                    "
-                    >HERE</a
-                  >
-                  to contribute!
-                </div>
-              </div>
-            </div>
-          </div>`,
-        });
-    }, 100);
+            to contribute!
+          </div>
+        </div>
+      </div>
+    </div>`,
+    });
 };
 
 export const findCommonElementsByKey = (arr1, arr2, key = '_id') => {
@@ -226,6 +222,5 @@ export const datetime = () => {
     const day = currentDate.getDate().toString().padStart(2, '0');
 
     const formattedDateTime = `${hours}:${minutes} ${month}/${day}/${year}`;
-    console.log(formattedDateTime);
     return formattedDateTime;
 };
