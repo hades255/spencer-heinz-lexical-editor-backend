@@ -58,6 +58,8 @@ export const createAuthToken = (user, expireTime = '1d') => {
                 avatar: user.avatar,
                 role: user.role,
                 status: user.status,
+                mobilePhone: user.mobilePhone,
+                workPhone: user.workPhone,
             },
         },
         JWT_SECRET_KEY,

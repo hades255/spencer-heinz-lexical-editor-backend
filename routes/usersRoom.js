@@ -13,6 +13,7 @@ const usersRoom = (fastify, opts, done) => {
             }
             rooms.push({
                 name: room.name,
+                activeTeam: room.activeTeam,
                 users,
             });
         }
@@ -142,15 +143,44 @@ const usersRoom = (fastify, opts, done) => {
 
 export default usersRoom;
 
-export const createRoom = (_id, creator, invites = []) => {
+export const createRoom = (_id, team = 'Init Team', creator, invites = []) => {
     const room = {
         userData: new Map(), // Map to store user data
         name: _id,
-        activeTeam: '',
+        activeTeam: team,
     };
-    room.userData.set(creator._id.toString(), userData(creator));
+    room.userData.set(
+        creator._id.toString(),
+        userData({
+            ...creator._doc,
+            leader: true,
+            team,
+            reply: 'creator',
+        }),
+    );
     for (let user of invites) {
-        room.userData.set(user._id.toString(), userData(user));
+        room.userData.set(user._id.toString(), userData({ ...user._doc }));
+    }
+    return room;
+};
+
+export const createRoom1 = (_id, team = 'Init Team', creator, invites = []) => {
+    const room = {
+        userData: new Map(), // Map to store user data
+        name: _id,
+        activeTeam: team,
+    };
+    room.userData.set(
+        creator._id.toString(),
+        userData({
+            ...creator,
+            leader: true,
+            team,
+            reply: 'creator',
+        }),
+    );
+    for (let user of invites) {
+        room.userData.set(user._id.toString(), userData({ ...user }));
     }
     return room;
 };
@@ -163,20 +193,24 @@ export const userData = ({
     status,
     mobilePhone,
     workPhone,
-    reply = 'accept',
-}) => ({
-    _id,
-    name,
-    email,
-    avatar,
-    status,
-    mobilePhone,
-    workPhone,
-    reply,
-    team: '',
-    leader: false,
-    socket: null,
-});
+    reply = 'pending',
+    leader = false,
+    team = 'Init Team',
+}) => {
+    return {
+        _id,
+        name,
+        email,
+        avatar,
+        status,
+        mobilePhone,
+        workPhone,
+        reply,
+        team,
+        leader,
+        socket: null,
+    };
+};
 
 export const getUserData = ({
     _id,
@@ -205,8 +239,8 @@ export const getUserData = ({
 export const initUserRoom = async (fastify) => {
     try {
         const doucments = await DocumentModel.find({}).populate('creator');
-        doucments.forEach(({ _id, creator, invites }) => {
-            const room = createRoom(_id, creator, invites);
+        doucments.forEach(({ _id, team, creator, invites }) => {
+            const room = createRoom(_id, team, creator, invites);
             fastify.appData.userrooms.set(_id.toString(), room);
         });
     } catch (error) {

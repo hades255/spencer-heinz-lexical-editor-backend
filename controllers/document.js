@@ -17,7 +17,7 @@ import DocumentModel from '../models/Document.js';
 import MessageModel from '../models/Message.js';
 import NotificationModel from '../models/Notification.js';
 import InviteModel from '../models/invite.js';
-import { broadcastToDoc, createRoom, userData } from '../routes/usersRoom.js';
+import { broadcastToDoc, createRoom1, userData } from '../routes/usersRoom.js';
 
 export const update = (Rooms) => async (request, reply) => {
     const { uniqueId } = request.params;
@@ -196,23 +196,20 @@ export const update = (Rooms) => async (request, reply) => {
 };
 
 export const create = (Rooms) => async (request, reply) => {
-    const { name, description, initialText, invites: ninvites } = request.body;
-    const invites = ninvites.filter(
-        (item) => item.email !== request.user.email,
-    );
+    const { name, description, team, invites } = request.body;
     try {
         const newDoc = await DocumentModel({
             name,
             description,
-            initialText,
-            invites: invites,
+            team,
+            invites,
             creator: request.user._id,
         }).save();
         //  if want to invite users
+        const room = createRoom1(newDoc._id, team, request.user, invites);
+        Rooms.set(newDoc._id.toString(), room);
         let _invites = [];
         let _notifications = [];
-        const room = createRoom(newDoc._id, request.user, invites);
-        Rooms.set(newDoc._id.toString(), room);
         if (invites.length) {
             let nonActiveUsers = []; //  used for get non active users from the invites
             let k = 0;
@@ -409,7 +406,7 @@ export const clearInvite = (Rooms) => async (request, reply) => {
 };
 
 export const setInvite = (Rooms) => async (request, reply) => {
-    const { invites } = request.body;
+    const { invites, team } = request.body;
     try {
         const newDoc = await DocumentModel.findById(request.params.uniqueId);
         newDoc.invites = [
@@ -417,6 +414,7 @@ export const setInvite = (Rooms) => async (request, reply) => {
             ...invites.map((item) => ({
                 ...item,
                 invitor: request.user,
+                team,
             })),
         ];
         newDoc.save();
@@ -425,7 +423,7 @@ export const setInvite = (Rooms) => async (request, reply) => {
             for (let contributor of invites) {
                 room.userData.set(
                     contributor._id.toString(),
-                    userData(contributor),
+                    userData({ ...contributor, team }),
                 );
             }
             broadcastToDoc(room);

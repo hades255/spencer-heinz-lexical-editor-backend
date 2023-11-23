@@ -68,6 +68,14 @@ const DocumentSchema = new Schema(
                         default: '',
                     },
                 },
+                team: {
+                    type: String,
+                    default: 'Init Team',
+                },
+                leader: {
+                    type: Boolean,
+                    default: false,
+                },
             },
         ],
         initialText: {
@@ -79,6 +87,10 @@ const DocumentSchema = new Schema(
             type: String,
             enum: Object.values(DOCUMENT_STATUS),
             default: DOCUMENT_STATUS.EDITING,
+        },
+        team: {
+            type: String,
+            default: 'Init Team',
         },
     },
     { timestamps: true },
