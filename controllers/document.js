@@ -413,7 +413,7 @@ export const setInvite = (Rooms) => async (request, reply) => {
             ...newDoc.invites,
             ...invites.map((item) => ({
                 ...item,
-                invitor: request.user,
+                invitor: request.user._id,
                 team,
             })),
         ];

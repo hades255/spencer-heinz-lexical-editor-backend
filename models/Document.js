@@ -51,22 +51,8 @@ const DocumentSchema = new Schema(
                 status: { type: String, default: USER_STATUS.PENDING },
                 reply: { type: String, default: 'pending' },
                 invitor: {
-                    _id: {
-                        type: String,
-                        default: '',
-                    },
-                    name: {
-                        type: String,
-                        default: '',
-                    },
-                    email: {
-                        type: String,
-                        default: '',
-                    },
-                    avatar: {
-                        type: String,
-                        default: '',
-                    },
+                    type: String,
+                    default: '',
                 },
                 team: {
                     type: String,

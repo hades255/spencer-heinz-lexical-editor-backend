@@ -175,7 +175,7 @@ fastify.register(usersRoom, { prefix: '/userrooms' });
 
 const startApp = async () => {
     try {
-        fastify.listen(PORT, '0.0.0.0');
+        fastify.listen({ port: PORT, host: '0.0.0.0' });
     } catch (err) {
         fastify.log.error(err);
         // eslint-disable-next-line no-undef

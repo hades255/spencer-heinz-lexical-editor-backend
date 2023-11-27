@@ -53,21 +53,11 @@ const usersRoom = (fastify, opts, done) => {
         let room = null;
         if (Rooms.has(roomId)) {
             room = Rooms.get(roomId);
-            let users = [];
             room.userData.set(userId, {
                 ...room.userData.get(userId),
                 socket: client,
             });
-            for (let userData of room.userData.values()) {
-                users.push(getUserData(userData));
-            }
-            client.send(
-                JSON.stringify({
-                    type: 'userslist',
-                    users,
-                    active: room.activeTeam,
-                }),
-            );
+            sendTeamDataToMe(room, userId);
         } else {
             console.log('close');
             client.close();
@@ -80,49 +70,61 @@ const usersRoom = (fastify, opts, done) => {
                     room.activeTeam = data.team;
                     broadcastToDoc(room);
                     break;
-                case 'new-team':
-                    for (let user of data.value) {
-                        room.userData.set(user.toString(), {
-                            ...room.userData.get(user.toString()),
-                            team: data.name,
-                            leader: user === userId,
-                        });
-                    }
-                    broadcastToDoc(room);
-                    break;
-                case 'edit-team':
-                    for (let user of data.a) {
-                        room.userData.set(user.toString(), {
-                            ...room.userData.get(user.toString()),
-                            team: data.name,
-                            leader: false,
-                        });
-                    }
-                    for (let user of data.r) {
-                        room.userData.set(user.toString(), {
-                            ...room.userData.get(user.toString()),
-                            team: '',
-                            leader: false,
-                        });
-                    }
-                    if (data.team) {
-                        for (let user of data.value) {
-                            room.userData.set(user.toString(), {
-                                ...room.userData.get(user.toString()),
-                                team: data.name,
-                                leader: user === userId,
-                            });
+                case 'add-team':
+                    (async () => {
+                        try {
+                            const doc = await DocumentModel.findById(roomId);
+                            doc.invites = doc.invites.map((invite) => ({
+                                ...invite,
+                                leader:
+                                    invite._id === data.teamLeader
+                                        ? true
+                                        : invite.leader,
+                                team:
+                                    invite._id === data.teamLeader
+                                        ? data.teamName
+                                        : invite.team,
+                            }));
+                            await doc.save();
+                        } catch (error) {
+                            console.log(error);
                         }
-                    }
+                    })();
+                    room.userData.set(data.teamLeader, {
+                        ...room.userData.get(data.teamLeader),
+                        team: data.teamName,
+                        leader: true,
+                        invitor: userId,
+                    });
                     broadcastToDoc(room);
                     break;
                 case 'remove-team':
-                    for (let user of data.value) {
-                        room.userData.set(user.toString(), {
-                            ...room.userData.get(user.toString()),
-                            team: '',
-                            leader: false,
-                        });
+                    (async () => {
+                        try {
+                            const doc = await DocumentModel.findById(roomId);
+                            doc.invites = doc.invites.map((invite) => ({
+                                ...invite,
+                                leader:
+                                    invite.team === data.oldTeam
+                                        ? false
+                                        : invite.leader,
+                                team:
+                                    invite.team === data.oldTeam
+                                        ? data.newTeam
+                                        : invite.team,
+                            }));
+                            await doc.save();
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    })();
+                    for (let userData of room.userData.values()) {
+                        if (userData.team === data.oldTeam)
+                            room.userData.set(userData._id.toString(), {
+                                ...userData,
+                                team: data.newTeam,
+                                leader: false,
+                            });
                     }
                     broadcastToDoc(room);
                     break;
@@ -196,6 +198,7 @@ export const userData = ({
     reply = 'pending',
     leader = false,
     team = 'Init Team',
+    invitor = '',
 }) => {
     return {
         _id,
@@ -209,6 +212,7 @@ export const userData = ({
         team,
         leader,
         socket: null,
+        invitor,
     };
 };
 
@@ -223,6 +227,7 @@ export const getUserData = ({
     mobilePhone,
     workPhone,
     reply,
+    invitor,
 }) => ({
     _id,
     name,
@@ -234,6 +239,7 @@ export const getUserData = ({
     reply,
     team,
     leader,
+    invitor,
 });
 
 export const initUserRoom = async (fastify) => {
@@ -249,9 +255,21 @@ export const initUserRoom = async (fastify) => {
 };
 
 export const broadcastToDoc = (room) => {
-    let users = [];
     for (let userData of room.userData.values()) {
-        users.push(getUserData(userData));
+        if (userData.socket) {
+            sendTeamDataToMe(room, userData._id.toString());
+        }
+    }
+};
+
+export const multicastToDoc = (room, user) => {
+    const team = room.userData.get(user.tostring()).team;
+    if (!team) return;
+    let users = [];
+    let leaders = [];
+    for (let userData of room.userData.values()) {
+        if (userData.team === team) users.push(getUserData(userData));
+        if (userData.leader) leaders.push(getUserData(userData));
     }
     for (let userData of room.userData.values()) {
         if (userData.socket)
@@ -261,6 +279,7 @@ export const broadcastToDoc = (room) => {
                         JSON.stringify({
                             type: 'userslist',
                             users,
+                            leaders,
                             active: room.activeTeam,
                         }),
                     );
@@ -269,4 +288,32 @@ export const broadcastToDoc = (room) => {
                 }
             })();
     }
+};
+
+export const sendTeamDataToMe = (room, userId) => {
+    const { team, socket } = room.userData.get(userId);
+    if (!team || !socket) return;
+    let users = [];
+    let leaders = [];
+    let emails = [];
+    for (let userData of room.userData.values()) {
+        emails.push(userData.email);
+        if (userData.team === team) users.push(getUserData(userData));
+        if (userData.leader) leaders.push(getUserData(userData));
+    }
+    (async () => {
+        try {
+            socket.send(
+                JSON.stringify({
+                    type: 'userslistWithTeam',
+                    users,
+                    emails,
+                    leaders,
+                    active: room.activeTeam,
+                }),
+            );
+        } catch (error) {
+            console.log('socket error: ', error);
+        }
+    })();
 };
