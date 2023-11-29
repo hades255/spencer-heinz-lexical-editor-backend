@@ -1,3 +1,4 @@
+import { handleNewTeam } from '../controllers/document.js';
 import DocumentModel from '../models/Document.js';
 import { HTTP_RES_CODE } from '../shared/constants.js';
 
@@ -68,7 +69,7 @@ const usersRoom = (fastify, opts, done) => {
             switch (data.type) {
                 case 'set-active':
                     room.activeTeam = data.team;
-                    broadcastToDoc(room);
+                    broadcastToDocActiveTeam(room);
                     break;
                 case 'add-team':
                     (async () => {
@@ -97,6 +98,43 @@ const usersRoom = (fastify, opts, done) => {
                         invitor: userId,
                     });
                     broadcastToDoc(room);
+                    break;
+                case 'add-new-team':
+                    if (!data.teamLeader) break;
+                    handleNewTeam(
+                        roomId,
+                        room,
+                        data.teamLeader,
+                        data.teamName,
+                        data.user,
+                    );
+                    // (async () => {
+                    //     try {
+                    //         const doc = await DocumentModel.findById(roomId);
+                    //         doc.invites = [
+                    //             ...doc.invites,
+                    //             userData({
+                    //                 ...data.teamLeaderUser,
+                    //                 leader: true,
+                    //                 team: data.teamName,
+                    //                 invitor: userId,
+                    //             }),
+                    //         ];
+                    //         await doc.save();
+                    //     } catch (error) {
+                    //         console.log(error);
+                    //     }
+                    // })();
+                    // room.userData.set(
+                    //     data.teamLeader,
+                    //     userData({
+                    //         ...data.teamLeaderUser,
+                    //         leader: true,
+                    //         team: data.teamName,
+                    //         invitor: userId,
+                    //     }),
+                    // );
+                    // broadcastToDoc(room);
                     break;
                 case 'remove-team':
                     (async () => {
@@ -255,9 +293,42 @@ export const initUserRoom = async (fastify) => {
 };
 
 export const broadcastToDoc = (room) => {
+    let users = [];
+    let leaders = [];
+    let emails = [];
+    for (let userData of room.userData.values()) {
+        emails.push(userData.email);
+        if (userData.leader) leaders.push(getUserData(userData));
+        if (users[userData.team] && users[userData.team].length) {
+            users[userData.team].push(getUserData(userData));
+        } else {
+            users[userData.team] = [getUserData(userData)];
+        }
+    }
     for (let userData of room.userData.values()) {
         if (userData.socket) {
-            sendTeamDataToMe(room, userData._id.toString());
+            userData.socket.send(
+                JSON.stringify({
+                    type: 'userslistWithTeam',
+                    users: users[userData.team],
+                    emails,
+                    leaders,
+                    active: room.activeTeam,
+                }),
+            );
+        }
+    }
+};
+
+export const broadcastToDocActiveTeam = (room) => {
+    for (let userData of room.userData.values()) {
+        if (userData.socket) {
+            userData.socket.send(
+                JSON.stringify({
+                    type: 'active-team',
+                    active: room.activeTeam,
+                }),
+            );
         }
     }
 };

@@ -489,6 +489,8 @@ export const setInvite = (Rooms) => async (request, reply) => {
                 });
             }
         }
+        const flagMe =
+            newDoc.creator.toString() !== request.user._id.toString();
         if (invites.length !== 0) {
             //  send a notification to creator to wait his contributors to join
             _notifications.push({
@@ -512,6 +514,33 @@ export const setInvite = (Rooms) => async (request, reply) => {
                 ],
                 redirect: newDoc._id,
             });
+            if (flagMe)
+                _notifications.push({
+                    to: newDoc.creator,
+                    type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
+                    data: [
+                        { text: 'Invited: ', variant: 'subtitle1' },
+                        {
+                            text: nameSentence(
+                                invites.map((item) => item.name),
+                            ),
+                            variant: 'subtitle1',
+                        },
+                        {
+                            text: ` ${
+                                invites.length === 1 ? 'was' : 'were'
+                            } received by `,
+                        },
+                        {
+                            text: `${request.user.name}(${request.user.email})`,
+                            variant: 'subtitle1',
+                        },
+                        { text: '<br/>' },
+                        { text: 'Document: ' },
+                        { text: newDoc.name },
+                    ],
+                    redirect: newDoc._id,
+                });
         }
         if (_invites.length) {
             InviteModel.insertMany(_invites);
@@ -624,5 +653,141 @@ export const handleInvite = async (request, reply) => {
             data: {},
             message: 'Unexpected Server Error Occured.',
         });
+    }
+};
+
+export const handleNewTeam = async (
+    uniqueId,
+    room,
+    teamLeader,
+    teamName,
+    user,
+) => {
+    try {
+        console.log(uniqueId, teamLeader, teamName, user);
+        //  get doc
+        const newDoc = await DocumentModel.findById(uniqueId);
+        newDoc.invites = [
+            ...newDoc.invites,
+            userData({
+                ...teamLeader,
+                leader: true,
+                team: teamName,
+                invitor: user._id.toString(),
+            }),
+        ];
+        //  set new contributor
+        await newDoc.save();
+        //  handle rooms / broadcast
+        // if (Rooms.has(newDoc._id.toString())) {
+        //     const room = Rooms.get(newDoc._id.toString());
+        room.userData.set(
+            teamLeader._id,
+            userData({
+                ...teamLeader,
+                leader: true,
+                team: teamName,
+                invitor: user._id.toString(),
+            }),
+        );
+        broadcastToDoc(room);
+        // }
+        //  send invitation email to the new user
+        setTimeout(() => {
+            sendInvitationEmailToExist(user, teamLeader, newDoc);
+        }, 1000);
+        //  handle notifications
+        let _notifications = [];
+        //  send contriubtor
+        _notifications.push({
+            to: teamLeader._id,
+            type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
+            redirect: newDoc._id,
+            data: [
+                { text: 'Invited: ', variant: 'subtitle1' },
+                { text: 'You', variant: 'subtitle1' },
+                { text: ` were received by ` },
+                {
+                    text: user.name,
+                    variant: 'subtitle1',
+                },
+                { text: '<br/>' },
+                { text: 'Document: ' },
+                { text: newDoc.name },
+            ],
+        });
+        //  send to me
+        _notifications.push({
+            to: user._id,
+            type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
+            data: [
+                { text: 'Invited: ', variant: 'subtitle1' },
+                {
+                    text: teamLeader.name,
+                    variant: 'subtitle1',
+                },
+                {
+                    text: ` was received by `,
+                },
+                { text: 'You', variant: 'subtitle1' },
+                { text: '<br/>' },
+                { text: 'Document: ' },
+                { text: newDoc.name },
+            ],
+            redirect: newDoc._id,
+        });
+        //  if I is not creator send to craetor
+        if (newDoc.creator.toString() !== user._id.toString())
+            _notifications.push({
+                to: newDoc.creator,
+                type: NOTIFICATION_TYPES.DOCUMENT_INVITE_SEND,
+                data: [
+                    { text: 'Invited: ', variant: 'subtitle1' },
+                    {
+                        text: teamLeader.name,
+                        variant: 'subtitle1',
+                    },
+                    {
+                        text: ` was received by `,
+                    },
+                    {
+                        text: `${user.name}(${user.email})`,
+                        variant: 'subtitle1',
+                    },
+                    { text: '<br/>' },
+                    { text: 'Document: ' },
+                    { text: newDoc.name },
+                ],
+                redirect: newDoc._id,
+            });
+        //  save notifications
+        NotificationModel.insertMany(_notifications);
+        //  if the contributor is nonactive user, send admin to resolve this
+        if (teamLeader.status !== 'active' && teamLeader.status !== 'invited') {
+            MessageModel({
+                from: user,
+                to: 'admin',
+                data: [
+                    { text: 'I', variant: 'subtitle1' },
+                    {
+                        text: ' invited some contributors who are not active now. Please resolve this.',
+                    },
+                ],
+                type: MESSAGE_TYPES.DOCUMENT_INVITE_RESOLVE,
+                attachment: JSON.stringify([teamLeader]),
+            }).save();
+        }
+        // return reply.send({
+        //     code: HTTP_RES_CODE.SUCCESS,
+        //     data: {},
+        //     message: '',
+        // });
+    } catch (e) {
+        console.log('document@create-room-error:', e);
+        // return reply.code(500).send({
+        //     code: HTTP_RES_CODE.ERROR,
+        //     data: {},
+        //     message: 'Unexpected Server Error Occured.',
+        // });
     }
 };

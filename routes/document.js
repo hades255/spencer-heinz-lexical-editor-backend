@@ -8,6 +8,7 @@ import {
     clearInvite,
     create,
     handleInvite,
+    handleNewTeam,
     setInvite,
     update,
 } from '../controllers/document.js';
@@ -289,6 +290,17 @@ const documentRouter = (fastify, opts, done) => {
         },
         handleInvite,
     );
+
+    //  handle make a new team with new leader-'/:uniqueId/newteam'
+    // fastify.put(
+    //     '/:uniqueId/newteam',
+    //     {
+    //         preValidation: fastifyPassport.authenticate('protected', {
+    //             session: false,
+    //         }),
+    //     },
+    //     handleNewTeam(Rooms),
+    // );
 
     // get one document-'/:uniqueId'
     fastify.get(

@@ -72,6 +72,10 @@ const UserSchema = new Schema(
             type: String,
             default: '',
         },
+        hide: {
+            type: Boolean,
+            default: false,
+        },
         skill: [
             {
                 type: String,
