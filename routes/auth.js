@@ -1,7 +1,12 @@
 import { fastifyPassport } from '../app.js';
-import { HTTP_RES_CODE, USER_STATUS } from '../shared/constants.js';
+import {
+    HTTP_RES_CODE,
+    NOTIFICATION_TYPES,
+    USER_STATUS,
+} from '../shared/constants.js';
 import { createAuthToken } from '../shared/helpers.js';
 import UserModel from '../models/User.js';
+import NotificationModel from '../models/Notification.js';
 
 const authRouter = (fastify, opts, done) => {
     fastify.post(
@@ -29,6 +34,27 @@ const authRouter = (fastify, opts, done) => {
                 user.mobilePhone = mobilePhone;
                 user.workPhone = workPhone;
                 await user.save();
+                new NotificationModel({
+                    to: '',
+                    type: NOTIFICATION_TYPES.USER_CREATE_NEW,
+                    data: [
+                        { text: 'New User: ', variant: 'subtitle1' },
+                        {
+                            text: `New user registered.`,
+                        },
+                        { text: '<br/>' },
+                        { text: 'Name: ' },
+                        {
+                            text: user.name,
+                            variant: 'subtitle1',
+                        },
+                        { text: ' Email: ' },
+                        {
+                            text: user.email,
+                            variant: 'subtitle1',
+                        },
+                    ],
+                }).save();
                 reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {

@@ -131,6 +131,7 @@ export const update = (Rooms) => async (request, reply) => {
                 _notifications.push({
                     to: contributor._id,
                     type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
+                    redirect: document._id,
                     data: [
                         { text: 'Deleted: ', variant: 'subtitle1' },
                         {
@@ -208,9 +209,9 @@ export const create = (Rooms) => async (request, reply) => {
         //  if want to invite users
         const room = createRoom1(newDoc._id, team, request.user, invites);
         Rooms.set(newDoc._id.toString(), room);
-        let _invites = [];
         let _notifications = [];
         if (invites.length) {
+            let _invites = [];
             let nonActiveUsers = []; //  used for get non active users from the invites
             let k = 0;
             for (let contributor of invites) {
@@ -286,14 +287,9 @@ export const create = (Rooms) => async (request, reply) => {
                 ],
                 redirect: newDoc._id,
             });
-
             if (_invites.length) {
                 InviteModel.insertMany(_invites);
             }
-            if (_notifications.length) {
-                NotificationModel.insertMany(_notifications);
-            }
-
             if (nonActiveUsers.length) {
                 MessageModel({
                     from: request.user,
@@ -309,7 +305,27 @@ export const create = (Rooms) => async (request, reply) => {
                 }).save();
             }
         }
-
+        _notifications.push({
+            to: '',
+            type: NOTIFICATION_TYPES.DOCUMENT_CREATE_NEW,
+            data: [
+                { text: 'New Document: ', variant: 'subtitle1' },
+                {
+                    text: request.user.name,
+                    variant: 'subtitle1',
+                },
+                {
+                    text: ` create a new document. `,
+                },
+                { text: '<br/>' },
+                { text: 'Document: ' },
+                { text: newDoc.name },
+            ],
+            redirect: newDoc._id,
+        });
+        if (_notifications.length) {
+            NotificationModel.insertMany(_notifications);
+        }
         return reply.send({
             code: HTTP_RES_CODE.SUCCESS,
             data: {
@@ -345,6 +361,7 @@ export const clearInvite = (Rooms) => async (request, reply) => {
             _notifications.push({
                 to: contributor._id,
                 type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
+                redirect: newDoc._id,
                 data: [
                     { text: 'Deleted: ', variant: 'subtitle1' },
                     {
