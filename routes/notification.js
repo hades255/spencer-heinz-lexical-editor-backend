@@ -143,7 +143,18 @@ const notificationRouter = (fastify, opts, done) => {
             try {
                 await NotificationModel.updateMany(
                     {
-                        to: request.user._id,
+                        $or: [
+                            { to: { $eq: request.user._id } },
+                            {
+                                to: {
+                                    $eq:
+                                        request.user.role ===
+                                        USER_ROLES.SUPERADMIN
+                                            ? USER_ROLES.ADMIN
+                                            : request.user.role,
+                                },
+                            },
+                        ],
                     },
                     { status: NOTIFICATION_STATUS.READ },
                 );
@@ -222,7 +233,18 @@ const notificationRouter = (fastify, opts, done) => {
                 }
                 if (connection.socket.readyState === connection.socket.OPEN) {
                     const notifications = await NotificationModel.find({
-                        $or: [{ to: { $eq: '' } }, { to: { $eq: user._id } }],
+                        $or: [
+                            { to: { $eq: '' } },
+                            { to: { $eq: user._id } },
+                            {
+                                to: {
+                                    $eq:
+                                        user.role === USER_ROLES.SUPERADMIN
+                                            ? USER_ROLES.ADMIN
+                                            : user.role,
+                                },
+                            },
+                        ],
                         createdAt: { $gt: date },
                     }).sort({ createdAt: -1 });
                     const messages = await MessageModel.find({

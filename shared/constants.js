@@ -34,6 +34,7 @@ export const USER_ROLES = {
     ADMIN: 'admin',
     SUPERADMIN: 'super admin',
     CREATOR: 'creator',
+    CREATOR_VIP: 'creator-vip',
     CONTRIBUTOR: 'contributor',
 };
 
@@ -47,7 +48,7 @@ export const NOTIFICATION_TYPES = {
     USER_SETTING_ROLE: '@user/setting/role',
     USER_SETTING_STATUS: '@user/setting/status',
     USER_RESET_PASSWORD: '@user/reset/password',
-    USER_CREATE_NEW: '@user/new'
+    USER_CREATE_NEW: '@user/new',
 };
 
 export const MESSAGE_TYPES = {

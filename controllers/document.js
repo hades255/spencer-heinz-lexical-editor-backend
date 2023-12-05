@@ -306,7 +306,7 @@ export const create = (Rooms) => async (request, reply) => {
             }
         }
         _notifications.push({
-            to: '',
+            to: 'admin',
             type: NOTIFICATION_TYPES.DOCUMENT_CREATE_NEW,
             data: [
                 { text: 'New Document: ', variant: 'subtitle1' },

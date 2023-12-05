@@ -8,7 +8,7 @@ import {
 import UserModel from '../models/User.js';
 import mongoose from 'mongoose';
 import NotificationModel from '../models/Notification.js';
-import { sendEmail } from '../shared/helpers.js';
+import { sendChangedRoleEmail, sendEmail } from '../shared/helpers.js';
 
 const userRouter = (fastify, opts, done) => {
     /**
@@ -359,12 +359,7 @@ const userRouter = (fastify, opts, done) => {
                     ],
                 }).save();
                 setTimeout(() => {
-                    sendEmail({
-                        from: process.env.SERVER_MAIL_ADDRESS,
-                        to: user.email,
-                        subject: `Your role has been set as ${role}.`,
-                        html: `Your role has been set as ${role}.`,
-                    });
+                    sendChangedRoleEmail(user, role);
                 }, 100);
 
                 return reply.send({

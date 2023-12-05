@@ -91,6 +91,52 @@ export const sendEmail = async (mail) => {
     }
 };
 
+export const sendChangedRoleEmail = (to, role) => {
+    return;
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `Your role has been set as ${role}.`,
+        html: `
+        <div style="display: flex; justify-content: center">
+          <div
+            style="
+              width: 100%;
+              max-width: 600px;
+              border: 2px solid #1677ff;
+              padding: 12px;
+              border-radius: 20px;
+              background-color: lightblue;
+            "
+          >
+            <h4 style="text-align: center">
+              Your role has set as
+              <span style="color: #1677ff">${role}</span>
+            </h4>
+            <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+            <br />
+            <div style="display: flex; justify-content: center">
+              <div>
+                Click
+                <a
+                  href="${process.env.FRONTEND_ADDRESS || ''}"
+                  style="
+                    padding: 8px;
+                    background-color: #1677ff;
+                    color: white;
+                    border-radius: 8px;
+                    text-decoration: none;
+                  "
+                  >HERE</a
+                >
+                to sign in.
+              </div>
+            </div>
+          </div>
+        </div>`,
+    });
+};
+
 export const sendInvitationEmailToExist = (from, to, doc) => {
     return;
     sendEmail({
@@ -101,6 +147,7 @@ export const sendInvitationEmailToExist = (from, to, doc) => {
       <div style="display: flex; justify-content: center">
         <div
           style="
+            width: 100%;
             max-width: 600px;
             border: 2px solid #1677ff;
             padding: 12px;
@@ -156,6 +203,7 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
         html: `<div style="display: flex; justify-content: center">
       <div
         style="
+          width: 100%;
           max-width: 600px;
           border: 2px solid #1677ff;
           padding: 12px;

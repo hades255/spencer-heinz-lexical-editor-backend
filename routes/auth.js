@@ -35,7 +35,7 @@ const authRouter = (fastify, opts, done) => {
                 user.workPhone = workPhone;
                 await user.save();
                 new NotificationModel({
-                    to: '',
+                    to: 'admin',
                     type: NOTIFICATION_TYPES.USER_CREATE_NEW,
                     data: [
                         { text: 'New User: ', variant: 'subtitle1' },
