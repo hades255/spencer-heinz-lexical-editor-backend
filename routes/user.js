@@ -158,6 +158,37 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    //  delete me delete"/:userId"
+    fastify.delete(
+        '/:userId',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const { userId } = request.params;
+                const user = await UserModel.findById(userId);
+                user.status = USER_STATUS.DELETED;
+                await user.save();
+
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: {},
+                    message: 'User deleted successfully.',
+                });
+            } catch (e) {
+                console.log('user@delete-error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
     /*  "/" set status*/
     fastify.put(
         '/',
@@ -352,7 +383,81 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
-    //  "/password" reset password
+    /*  "/:id/setting" set setting */
+    fastify.put(
+        '/:userId/setting',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const { userId } = request.params;
+                const data = request.body;
+                const user = await UserModel.findById(userId);
+                user.setting = { ...user.setting, ...data };
+                await user.save();
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: user,
+                    message: 'User updated successfully.',
+                });
+            } catch (e) {
+                console.log('user@delete-error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
+    /*  "/:id/info" set account info */
+    fastify.put(
+        '/:userId/info',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (request, reply) => {
+            try {
+                const { userId } = request.params;
+                const {
+                    name,
+                    email,
+                    countryCode,
+                    mobilePhone,
+                    workPhone,
+                    company,
+                } = request.body;
+                const user = await UserModel.findById(userId);
+                user.name = name;
+                user.email = email;
+                user.countryCode = countryCode;
+                user.mobilePhone = mobilePhone;
+                user.workPhone = workPhone;
+                user.company = company;
+                await user.save();
+                return reply.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: user,
+                    message: 'User updated successfully.',
+                });
+            } catch (e) {
+                console.log('user@delete-error:', e);
+                return reply.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
+    //  "/password" reset password by admin
     fastify.post(
         '/password',
         {
@@ -385,7 +490,7 @@ const userRouter = (fastify, opts, done) => {
                     message: 'User updated successfully.',
                 });
             } catch (e) {
-                console.log('user@delete-error:', e);
+                console.log('user@password-reset-error:', e);
                 return reply.code(500).send({
                     code: HTTP_RES_CODE.ERROR,
                     data: {},
@@ -407,22 +512,11 @@ const userRouter = (fastify, opts, done) => {
             const { uniqueId } = request.params;
             const {
                 name,
-                user_id,
                 email,
-                dob,
                 countryCode,
-                contact,
+                company,
                 mobilePhone,
                 workPhone,
-                designation,
-                address,
-                address1,
-                country,
-                state,
-                city,
-                zip,
-                flag,
-                skill,
             } = request.body;
             try {
                 const _id = new mongoose.Types.ObjectId(uniqueId);
@@ -435,23 +529,12 @@ const userRouter = (fastify, opts, done) => {
                     });
                 }
 
-                user.dob = dob;
                 user.name = name;
-                user.user_id = user_id;
                 user.email = email;
                 user.countryCode = countryCode;
-                user.contact = contact;
+                user.company = company;
                 user.mobilePhone = mobilePhone;
                 user.workPhone = workPhone;
-                user.designation = designation;
-                user.address = address;
-                user.address1 = address1;
-                user.country = country;
-                user.state = state;
-                user.city = city;
-                user.zip = zip;
-                user.flag = flag;
-                user.skill = skill;
 
                 await user.save();
 

@@ -580,8 +580,8 @@ export const setInvite = (Rooms) => async (request, reply) => {
     }
 };
 
-export const handleInvite = async (request, reply) => {
-    const { id, status } = request.body;
+export const handleInvite = (Rooms) => async (request, reply) => {
+    const { id, status, leader } = request.body;
     try {
         let doc = await DocumentModel.findById(id);
         let flag = false;
@@ -595,17 +595,42 @@ export const handleInvite = async (request, reply) => {
             }
         }
         if (flag) {
-            doc.invites = doc.invites.map((invite) => ({
-                ...invite,
-                reply:
-                    invite._id.toString() === request.user._id.toString()
-                        ? status
-                        : invite.reply,
-            }));
+            doc.invites =
+                status === 'accept'
+                    ? doc.invites.map((invite) => ({
+                          ...invite,
+                          reply:
+                              invite._id.toString() ===
+                              request.user._id.toString()
+                                  ? 'accept'
+                                  : invite.reply,
+                      }))
+                    : doc.invites.filter(
+                          (invite) =>
+                              invite._id.toString() !==
+                              request.user._id.toString(),
+                      );
             await doc.save();
 
+            if (Rooms.has(doc._id.toString())) {
+                const room = Rooms.get(doc._id.toString());
+                if (status === 'accept')
+                    room.userData.set(
+                        request.user._id.toString(),
+                        userData({
+                            ...room.userData.get(request.user._id.toString()),
+                            reply: 'accept',
+                        }),
+                    );
+                else {
+                    room.userData.delete(request.user._id.toString());
+                }
+                broadcastToDoc(room);
+            }
+
+            console.log(leader || doc._id);
             NotificationModel({
-                to: doc.creator._id,
+                to: leader || doc._id,
                 type:
                     status === 'accept'
                         ? NOTIFICATION_TYPES.DOCUMENT_INVITE_ACCEPT
@@ -621,7 +646,7 @@ export const handleInvite = async (request, reply) => {
                     {
                         text: ` ${
                             status === 'accept' ? 'accepted' : 'rejected'
-                        } your invitation at `,
+                        } invitation at `,
                     },
                     { text: datetime(), variant: 'subtitle1' },
                     { text: '<br/>' },

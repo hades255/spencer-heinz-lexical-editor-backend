@@ -183,7 +183,7 @@ const usersRoom = (fastify, opts, done) => {
 
 export default usersRoom;
 
-export const createRoom = (_id, team = 'Init Team', creator, invites = []) => {
+export const createRoom = (_id, team = 'authoring', creator, invites = []) => {
     const room = {
         userData: new Map(), // Map to store user data
         name: _id,
@@ -204,7 +204,7 @@ export const createRoom = (_id, team = 'Init Team', creator, invites = []) => {
     return room;
 };
 
-export const createRoom1 = (_id, team = 'Init Team', creator, invites = []) => {
+export const createRoom1 = (_id, team = 'authoring', creator, invites = []) => {
     const room = {
         userData: new Map(), // Map to store user data
         name: _id,
@@ -235,7 +235,7 @@ export const userData = ({
     workPhone,
     reply = 'pending',
     leader = false,
-    team = 'Init Team',
+    team = 'authoring',
     invitor = '',
 }) => {
     return {
@@ -266,6 +266,7 @@ export const getUserData = ({
     workPhone,
     reply,
     invitor,
+    socket,
 }) => ({
     _id,
     name,
@@ -278,6 +279,7 @@ export const getUserData = ({
     team,
     leader,
     invitor,
+    online_status: socket ? 'available' : 'offline',
 });
 
 export const initUserRoom = async (fastify) => {

@@ -24,10 +24,6 @@ const UserSchema = new Schema(
             type: String,
             default: '',
         },
-        dob: {
-            type: Date,
-            default: '1990-01-01',
-        },
         countryCode: {
             type: String,
             default: '',
@@ -40,48 +36,16 @@ const UserSchema = new Schema(
             type: String,
             default: 0,
         },
-        designation: {
-            type: String,
-            default: '',
-        },
-        address: {
-            type: String,
-            default: '',
-        },
-        address1: {
-            type: String,
-            default: '',
-        },
-        country: {
-            type: String,
-            default: '',
-        },
-        state: {
-            type: String,
-            default: '',
-        },
-        city: {
-            type: String,
-            default: '',
-        },
-        zip: {
-            type: Number,
-            default: 0,
-        },
-        flag: {
-            type: String,
-            default: '',
-        },
-        hide: {
-            type: Boolean,
-            default: false,
-        },
-        skill: [
-            {
-                type: String,
-                default: '',
+        setting: {
+            hide: {
+                type: Boolean,
+                default: false,
             },
-        ],
+            loginNotification: {
+                type: Boolean,
+                default: true,
+            },
+        },
         comment: { type: String, default: '' },
         password: {
             type: String,

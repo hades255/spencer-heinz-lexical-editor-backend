@@ -128,8 +128,7 @@ const documentRouter = (fastify, opts, done) => {
                                 item.invites.find(
                                     (contributor) =>
                                         contributor._id.toString() ===
-                                            request.user._id.toString() &&
-                                        contributor.reply === 'accept',
+                                        request.user._id.toString(),
                                 ),
                         ),
                     },
@@ -288,7 +287,7 @@ const documentRouter = (fastify, opts, done) => {
                 session: false,
             }),
         },
-        handleInvite,
+        handleInvite(Rooms),
     );
 
     //  handle make a new team with new leader-'/:uniqueId/newteam'

@@ -56,7 +56,7 @@ const DocumentSchema = new Schema(
                 },
                 team: {
                     type: String,
-                    default: 'Init Team',
+                    default: 'authoring',
                 },
                 leader: {
                     type: Boolean,
@@ -76,7 +76,7 @@ const DocumentSchema = new Schema(
         },
         team: {
             type: String,
-            default: 'Init Team',
+            default: 'authoring',
         },
     },
     { timestamps: true },
