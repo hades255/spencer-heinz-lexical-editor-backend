@@ -645,7 +645,7 @@ export const handleInvite = (Rooms) => async (request, reply) => {
                 broadcastToDoc(room);
             }
 
-            console.log(leader || doc._id);
+            console.log('handle invite', leader || doc._id);
             NotificationModel({
                 to: leader || doc._id,
                 type:

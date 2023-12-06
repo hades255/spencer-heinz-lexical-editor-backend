@@ -6,6 +6,7 @@ const LocalStrategy = PassPortLocal.Strategy;
 
 import UserModel from '../models/User.js';
 import { JWT_SECRET_KEY } from '../conf.js';
+import { error } from 'lib0';
 
 export const initializeAuthSystem = async (passport) => {
     // register a serializer that stores the user object's id in the session ...
@@ -28,6 +29,14 @@ export const initializeAuthSystem = async (passport) => {
                 try {
                     // validation for email and password
                     const user = new UserModel();
+                    const emails = await UserModel.find({}, 'email');
+                    for (let item of emails) {
+                        if (item.email.toLowerCase() === email.toLowerCase()) {
+                            throw new Error(
+                                'email is duplicated. check capital letters',
+                            );
+                        }
+                    }
                     user.email = email;
                     user.password = password;
                     return done(null, user, {
