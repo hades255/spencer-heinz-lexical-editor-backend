@@ -645,9 +645,8 @@ export const handleInvite = (Rooms) => async (request, reply) => {
                 broadcastToDoc(room);
             }
 
-            console.log('handle invite', leader || doc._id);
             NotificationModel({
-                to: leader || doc._id,
+                to: leader || doc.creator,
                 type:
                     status === 'accept'
                         ? NOTIFICATION_TYPES.DOCUMENT_INVITE_ACCEPT
@@ -706,7 +705,6 @@ export const handleNewTeam = async (
     user,
 ) => {
     try {
-        console.log(uniqueId, teamLeader, teamName, user);
         //  get doc
         const newDoc = await DocumentModel.findById(uniqueId);
         newDoc.invites = [

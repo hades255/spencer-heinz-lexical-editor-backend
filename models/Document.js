@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import {
     DOCUMENT_STATUS,
-    USER_ROLES,
     USER_STATUS,
 } from '../shared/constants.js';
 

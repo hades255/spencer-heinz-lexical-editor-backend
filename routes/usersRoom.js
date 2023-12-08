@@ -1,6 +1,12 @@
 import { handleNewTeam } from '../controllers/document.js';
 import DocumentModel from '../models/Document.js';
-import { HTTP_RES_CODE } from '../shared/constants.js';
+import NotificationModel from '../models/Notification.js';
+import {
+    HTTP_RES_CODE,
+    NOTIFICATION_STATUS,
+    NOTIFICATION_TYPES,
+} from '../shared/constants.js';
+import { nameSentence } from '../shared/helpers.js';
 
 const usersRoom = (fastify, opts, done) => {
     const Rooms = fastify.appData.userrooms;
@@ -14,7 +20,8 @@ const usersRoom = (fastify, opts, done) => {
             }
             rooms.push({
                 name: room.name,
-                activeTeam: room.activeTeam,
+                active: room.activeTeam,
+                blocked: room.blockTeams,
                 users,
             });
         }
@@ -71,6 +78,16 @@ const usersRoom = (fastify, opts, done) => {
                     room.activeTeam = data.team;
                     broadcastToDocActiveTeam(room);
                     break;
+                case 'set-block':
+                    room.blockTeams = [...room.blockTeams, data.team];
+                    broadcastToDocBlockedTeam(room);
+                    break;
+                case 'remove-block':
+                    room.blockTeams = room.blockTeams.filter(
+                        (item) => item !== data.team,
+                    );
+                    broadcastToDocBlockedTeam(room);
+                    break;
                 case 'add-team':
                     (async () => {
                         try {
@@ -108,33 +125,6 @@ const usersRoom = (fastify, opts, done) => {
                         data.teamName,
                         data.user,
                     );
-                    // (async () => {
-                    //     try {
-                    //         const doc = await DocumentModel.findById(roomId);
-                    //         doc.invites = [
-                    //             ...doc.invites,
-                    //             userData({
-                    //                 ...data.teamLeaderUser,
-                    //                 leader: true,
-                    //                 team: data.teamName,
-                    //                 invitor: userId,
-                    //             }),
-                    //         ];
-                    //         await doc.save();
-                    //     } catch (error) {
-                    //         console.log(error);
-                    //     }
-                    // })();
-                    // room.userData.set(
-                    //     data.teamLeader,
-                    //     userData({
-                    //         ...data.teamLeaderUser,
-                    //         leader: true,
-                    //         team: data.teamName,
-                    //         invitor: userId,
-                    //     }),
-                    // );
-                    // broadcastToDoc(room);
                     break;
                 case 'remove-team':
                     (async () => {
@@ -152,19 +142,104 @@ const usersRoom = (fastify, opts, done) => {
                                         : invite.team,
                             }));
                             await doc.save();
+                            for (let userData of room.userData.values()) {
+                                if (userData.team === data.oldTeam)
+                                    room.userData.set(userData._id.toString(), {
+                                        ...userData,
+                                        team: data.newTeam,
+                                        leader: false,
+                                    });
+                            }
+                            broadcastToDoc(room);
                         } catch (error) {
                             console.log(error);
                         }
                     })();
-                    for (let userData of room.userData.values()) {
-                        if (userData.team === data.oldTeam)
-                            room.userData.set(userData._id.toString(), {
-                                ...userData,
-                                team: data.newTeam,
-                                leader: false,
-                            });
-                    }
-                    broadcastToDoc(room);
+                    break;
+                case 'delete-team':
+                    (async () => {
+                        try {
+                            const doc = await DocumentModel.findById(roomId);
+                            doc.invites = doc.invites.filter(
+                                (invite) => invite.team !== data.oldTeam,
+                            );
+                            await doc.save();
+                            let notis = [];
+                            let names = [];
+                            for (let userData of room.userData.values()) {
+                                if (userData.team === data.oldTeam) {
+                                    notis.push({
+                                        to: userData._id,
+                                        type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
+                                        data: [
+                                            {
+                                                text: 'Deleted: ',
+                                                variant: 'subtitle1',
+                                            },
+                                            {
+                                                text:
+                                                    data.me.name === userId
+                                                        ? 'Your team'
+                                                        : 'You',
+                                                variant: 'subtitle1',
+                                            },
+                                            {
+                                                text: ` were deleted by `,
+                                            },
+                                            {
+                                                text:
+                                                    data.me.name === userId
+                                                        ? 'You'
+                                                        : data.me.name,
+                                                variant: 'subtitle1',
+                                            },
+                                            { text: '<br/>' },
+                                            { text: 'Document: ' },
+                                            { text: doc.name },
+                                        ],
+                                        redirect: doc._id,
+                                    });
+                                    if (data.me.name !== userId)
+                                        names.push(userData.name);
+                                    room.userData.delete(
+                                        userData._id.toString(),
+                                    );
+                                }
+                            }
+                            if (names.length !== 0) {
+                                notis.push({
+                                    to: userId,
+                                    type: NOTIFICATION_TYPES.DOCUMENT_INVITE_DELETE,
+                                    data: [
+                                        {
+                                            text: 'Deleted: ',
+                                            variant: 'subtitle1',
+                                        },
+                                        {
+                                            text: nameSentence(names),
+                                            variant: 'subtitle1',
+                                        },
+                                        {
+                                            text: ` ${
+                                                names.length === 1
+                                                    ? 'was'
+                                                    : 'were'
+                                            } deleted by `,
+                                        },
+                                        { text: 'You', variant: 'subtitle1' },
+                                        { text: '<br/>' },
+                                        { text: 'Document: ' },
+                                        { text: doc.name },
+                                    ],
+                                    redirect: doc._id,
+                                });
+                            }
+                            NotificationModel.insertMany(notis);
+                            broadcastToDoc(room);
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    })();
                     break;
                 default:
                     break;
@@ -183,11 +258,13 @@ const usersRoom = (fastify, opts, done) => {
 
 export default usersRoom;
 
+//  call when init the app
 export const createRoom = (_id, team = 'authoring', creator, invites = []) => {
     const room = {
         userData: new Map(), // Map to store user data
         name: _id,
         activeTeam: team,
+        blockTeams: [],
     };
     room.userData.set(
         creator._id.toString(),
@@ -204,11 +281,13 @@ export const createRoom = (_id, team = 'authoring', creator, invites = []) => {
     return room;
 };
 
+//  when create a new document
 export const createRoom1 = (_id, team = 'authoring', creator, invites = []) => {
     const room = {
         userData: new Map(), // Map to store user data
         name: _id,
         activeTeam: team,
+        blockTeams: [],
     };
     room.userData.set(
         creator._id.toString(),
@@ -316,6 +395,7 @@ export const broadcastToDoc = (room) => {
                     emails,
                     leaders,
                     active: room.activeTeam,
+                    blocked: room.blockTeams,
                 }),
             );
         }
@@ -329,6 +409,19 @@ export const broadcastToDocActiveTeam = (room) => {
                 JSON.stringify({
                     type: 'active-team',
                     active: room.activeTeam,
+                }),
+            );
+        }
+    }
+};
+
+export const broadcastToDocBlockedTeam = (room) => {
+    for (let userData of room.userData.values()) {
+        if (userData.socket) {
+            userData.socket.send(
+                JSON.stringify({
+                    type: 'block-team',
+                    blocked: room.blockTeams,
                 }),
             );
         }
@@ -354,6 +447,7 @@ export const multicastToDoc = (room, user) => {
                             users,
                             leaders,
                             active: room.activeTeam,
+                            blocked: room.blockTeams,
                         }),
                     );
                 } catch (error) {
@@ -383,6 +477,7 @@ export const sendTeamDataToMe = (room, userId) => {
                     emails,
                     leaders,
                     active: room.activeTeam,
+                    blocked: room.blockTeams,
                 }),
             );
         } catch (error) {
