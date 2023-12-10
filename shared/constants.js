@@ -44,6 +44,7 @@ export const NOTIFICATION_TYPES = {
     DOCUMENT_INVITE_ACCEPT: '@document/invite/accept',
     DOCUMENT_INVITE_REJECT: '@document/invite/reject',
     DOCUMENT_INVITE_DELETE: '@document/invite/delete',
+    // DOCUMENT_INVITATION_SEND: '@document/invitation/send',
     DOCUMENT_CREATE_NEW: '@document/new',
     USER_SETTING_ROLE: '@user/setting/role',
     USER_SETTING_STATUS: '@user/setting/status',
@@ -53,4 +54,5 @@ export const NOTIFICATION_TYPES = {
 
 export const MESSAGE_TYPES = {
     DOCUMENT_INVITE_RESOLVE: '@document/invite/resolve/nonactive-users',
+    DOCUMENT_INVITATION_SEND: '@document/invitation/send',
 };

@@ -7,8 +7,10 @@ import { JWT_SECRET_KEY } from '../conf.js';
 import {
     clearInvite,
     create,
+    handleInvitation,
     handleInvite,
     handleNewTeam,
+    setInvitation,
     setInvite,
     update,
 } from '../controllers/document.js';
@@ -229,6 +231,28 @@ const documentRouter = (fastify, opts, done) => {
                 });
             }
         },
+    );
+
+    //  set invitations -post'/:uniqueId/t'
+    fastify.post(
+        '/:uniqueId/t',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        setInvitation,
+    );
+
+    //  handle invitation-put'/:uniqueId/t'
+    fastify.put(
+        '/:uniqueId/t',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        handleInvitation(Rooms),
     );
 
     //  update a document-'/:uniqueId'

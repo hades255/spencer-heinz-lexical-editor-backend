@@ -248,6 +248,53 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
     </div>`,
     });
 };
+export const sendInvitationToMail = (user, doc, emails, url) => {
+    return;
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: emails.join(','),
+        subject: `${user.name} has invited you to edit document`,
+        html: `<div style="display: flex; justify-content: center">
+          <div
+            style="
+              width: 100%;
+              max-width: 600px;
+              border: 2px solid #1677ff;
+              padding: 12px;
+              border-radius: 20px;
+              background-color: lightblue;
+            "
+          >
+            <h4>Invitation</h4>
+            <h4 style="text-align: center">
+              You have been invited to edit the document.
+            </h4>
+            <div style="display: flex; justify-content: center">
+              <a
+                href="${url}"
+                style="
+                  padding: 8px;
+                  background-color: #1677ff;
+                  color: white;
+                  border-radius: 8px;
+                  text-decoration: none;
+                  width: 100%;
+                  text-align: center;
+                "
+                >Open Document</a
+              >
+            </div>
+            <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+            <h4>
+              Invited by
+              <span style="color: #1677ff"> ${user.name} </span>
+            </h4>
+            <p><b>Title: </b> ${doc.name}</p>
+            <p><b>Description: </b> ${doc.description}</p>
+          </div>
+        </div>`,
+    });
+};
 
 export const findCommonElementsByKey = (arr1, arr2, key = '_id') => {
     const commonElements = arr1.filter((obj1) =>

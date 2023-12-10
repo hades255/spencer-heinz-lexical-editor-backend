@@ -12,6 +12,7 @@ import {
     nameSentence,
     sendInvitationEmailToExist,
     sendInvitationEmailToNew,
+    sendInvitationToMail,
 } from '../shared/helpers.js';
 import DocumentModel from '../models/Document.js';
 import MessageModel from '../models/Message.js';
@@ -829,5 +830,104 @@ export const handleNewTeam = async (
         //     data: {},
         //     message: 'Unexpected Server Error Occured.',
         // });
+    }
+};
+
+export const handleInvitation = (Rooms) => async (request, reply) => {
+    const { uniqueId } = request.params;
+    const { team, invitor, leader } = request.body;
+    try {
+        let doc = await DocumentModel.findById(uniqueId);
+        doc.invites = [
+            ...doc.invites,
+            { ...request.user, team, invitor, leader: false, reply: 'accept' },
+        ];
+        await doc.save();
+
+        if (Rooms.has(doc._id.toString())) {
+            const room = Rooms.get(doc._id.toString());
+            room.userData.set(
+                request.user._id.toString(),
+                userData({
+                    ...request.user,
+                    team,
+                    reply: 'accept',
+                }),
+            );
+            broadcastToDoc(room);
+        }
+
+        NotificationModel({
+            to: leader || doc.creator,
+            type: NOTIFICATION_TYPES.DOCUMENT_INVITE_ACCEPT,
+            data: [
+                {
+                    text: 'Accepted',
+                    variant: 'subtitle1',
+                },
+                { text: request.user.name, variant: 'subtitle1' },
+                { text: ' accepted invitation at ' },
+                { text: datetime(), variant: 'subtitle1' },
+                { text: '<br/>' },
+                { text: 'Document: ' },
+                { text: doc.name },
+            ],
+            redirect: doc._id,
+        }).save();
+
+        return reply.send({
+            code: HTTP_RES_CODE.SUCCESS,
+            data: {},
+            message: '',
+        });
+    } catch (e) {
+        console.log('document@create-room-error:', e);
+        return reply.code(500).send({
+            code: HTTP_RES_CODE.ERROR,
+            data: {},
+            message: 'Unexpected Server Error Occured.',
+        });
+    }
+};
+
+export const setInvitation = async (request, reply) => {
+    const { uniqueId } = request.params;
+    const { text, invites, emails } = request.body;
+    try {
+        let doc = await DocumentModel.findById(uniqueId);
+        let messages = [];
+        for (let invite of invites) {
+            messages.push({
+                from: request.user,
+                to: invite,
+                type: MESSAGE_TYPES.DOCUMENT_INVITATION_SEND,
+                redirect: text,
+                data: [
+                    { text: request.user.name, variant: 'subtitle1' },
+                    { text: ' send invitation at ' },
+                    { text: datetime(), variant: 'subtitle1' },
+                    { text: '<br/>' },
+                    { text: 'Document: ' },
+                    { text: doc.name },
+                ],
+            });
+        }
+        await MessageModel.insertMany(messages);
+        setTimeout(() => {
+            sendInvitationToMail(request.user, doc, emails, text);
+        });
+
+        return reply.send({
+            code: HTTP_RES_CODE.SUCCESS,
+            data: {},
+            message: '',
+        });
+    } catch (e) {
+        console.log('document@create-room-error:', e);
+        return reply.code(500).send({
+            code: HTTP_RES_CODE.ERROR,
+            data: {},
+            message: 'Unexpected Server Error Occured.',
+        });
     }
 };
