@@ -5,11 +5,9 @@ import * as Y from 'yjs';
 import crypto from 'crypto';
 import { transporter } from '../app.js';
 
-export const generateSecretString = (a, b, c) => {
-    const secretString = a + b + c;
+export const generateSecretString = (...val) => {
+    const secretString = JSON.toString({ ...val });
     const hash = crypto.createHash('sha256').update(secretString).digest('hex');
-    // const randomString = generateRandomString(64 - hash.length);
-
     return hash;
 };
 
@@ -232,6 +230,65 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
             Click
             <a
               href="${process.env.FRONTEND_ADDRESS || ''}/invites/${token}"
+              style="
+                padding: 8px;
+                background-color: #1677ff;
+                color: white;
+                border-radius: 8px;
+                text-decoration: none;
+              "
+              >HERE</a
+            >
+            to contribute!
+          </div>
+        </div>
+      </div>
+    </div>`,
+    });
+};
+export const sendInvitationEmailToUser = (from, to, doc) => {
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `${from.name} invited you to his document.`,
+        html: `<div style="display: flex; justify-content: center">
+      <div
+        style="
+          width: 100%;
+          max-width: 600px;
+          border: 2px solid #1677ff;
+          padding: 12px;
+          border-radius: 20px;
+          background-color: lightblue;
+        "
+      >
+        <h4 style="text-align: center">
+          <a
+            title="${from.email}"
+            href="mailto:${from.email}"
+            style="text-decoration: none"
+            >${from.name}</a
+          >
+          invited you to document.
+        </h4>
+        <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+        <p><b>Title:</b> ${doc.name}</p>
+        <p>
+          <b>Description: </b> ${doc.description}
+        </p>
+        <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+        <br />
+        <div style="display: flex; justify-content: center">
+          <div>
+            Click
+            <a
+              href="${
+                  to.status === 'invited'
+                      ? `${process.env.FRONTEND_ADDRESS || ''}/invites/${token}`
+                      : `${process.env.FRONTEND_ADDRESS || ''}/document/${
+                            doc._id
+                        }?email=${to.email}`
+              }"
               style="
                 padding: 8px;
                 background-color: #1677ff;

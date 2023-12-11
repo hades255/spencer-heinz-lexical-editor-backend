@@ -12,6 +12,7 @@ import {
     nameSentence,
     sendInvitationEmailToExist,
     sendInvitationEmailToNew,
+    sendInvitationEmailToUser,
     sendInvitationToMail,
 } from '../shared/helpers.js';
 import DocumentModel from '../models/Document.js';
@@ -37,14 +38,22 @@ export const update = (Rooms) => async (request, reply) => {
 
         document.name = name;
         document.description = description;
-        document.invites = invites;
+        document.invites = invites.map((item) => ({
+            ...item,
+            mailStatus: item.mailStatus || document.emailMethod === 'automatic',
+        }));
         await document.save();
         if (Rooms.has(document._id.toString())) {
             const room = Rooms.get(document._id.toString());
             for (let contributor of a) {
                 room.userData.set(
                     contributor._id.toString(),
-                    userData(contributor),
+                    userData({
+                        ...contributor,
+                        mailStatus:
+                            contributor.mailStatus ||
+                            document.emailMethod === 'automatic',
+                    }),
                 );
             }
             for (let contributor of r) {
@@ -70,22 +79,26 @@ export const update = (Rooms) => async (request, reply) => {
                         document,
                         token,
                     });
-                    setTimeout(() => {
-                        sendInvitationEmailToNew(
-                            request.user,
-                            contributor,
-                            document,
-                            token,
-                        );
-                    }, k * 1000);
+                    if (document.emailMethod === 'automatic') {
+                        setTimeout(() => {
+                            sendInvitationEmailToNew(
+                                request.user,
+                                contributor,
+                                document,
+                                token,
+                            );
+                        }, k * 1000);
+                    }
                 } else {
-                    setTimeout(() => {
-                        sendInvitationEmailToExist(
-                            request.user,
-                            contributor,
-                            document,
-                        );
-                    }, k * 1000);
+                    if (document.emailMethod === 'automatic') {
+                        setTimeout(() => {
+                            sendInvitationEmailToExist(
+                                request.user,
+                                contributor,
+                                document,
+                            );
+                        }, k * 1000);
+                    }
                     _notifications.push({
                         to: contributor._id,
                         type: NOTIFICATION_TYPES.DOCUMENT_INVITE_RECEIVE,
@@ -198,17 +211,31 @@ export const update = (Rooms) => async (request, reply) => {
 };
 
 export const create = (Rooms) => async (request, reply) => {
-    const { name, description, team, invites } = request.body;
+    const { name, description, team, invites, emailMethod } = request.body;
     try {
         const newDoc = await DocumentModel({
             name,
             description,
             team,
-            invites,
+            invites: invites.map((item) => ({
+                ...item,
+                mailStatus: emailMethod === 'automatic',
+                invitor: request.user._id.toString(),
+            })),
+            emailMethod,
             creator: request.user._id,
         }).save();
         //  if want to invite users
-        const room = createRoom1(newDoc._id, team, request.user, invites);
+        const room = createRoom1(
+            newDoc._id,
+            team,
+            request.user,
+            invites.map((item) => ({
+                ...item,
+                mailStatus: emailMethod === 'automatic',
+                invitor: request.user._id.toString(),
+            })),
+        );
         Rooms.set(newDoc._id.toString(), room);
         let _notifications = [];
         if (invites.length) {
@@ -229,22 +256,26 @@ export const create = (Rooms) => async (request, reply) => {
                         document: newDoc,
                         token,
                     });
-                    setTimeout(() => {
-                        sendInvitationEmailToNew(
-                            request.user,
-                            contributor,
-                            newDoc,
-                            token,
-                        );
-                    }, k * 1000);
+                    if (emailMethod === 'automatic') {
+                        setTimeout(() => {
+                            sendInvitationEmailToNew(
+                                request.user,
+                                contributor,
+                                newDoc,
+                                token,
+                            );
+                        }, k * 1000);
+                    }
                 } else {
-                    setTimeout(() => {
-                        sendInvitationEmailToExist(
-                            request.user,
-                            contributor,
-                            newDoc,
-                        );
-                    }, k * 1000);
+                    if (emailMethod === 'automatic') {
+                        setTimeout(() => {
+                            sendInvitationEmailToExist(
+                                request.user,
+                                contributor,
+                                newDoc,
+                            );
+                        }, k * 1000);
+                    }
                     if (contributor.status !== USER_STATUS.ACTIVE) {
                         nonActiveUsers.push(contributor);
                     }
@@ -432,6 +463,7 @@ export const setInvite = (Rooms) => async (request, reply) => {
             ...invites.map((item) => ({
                 ...item,
                 invitor: request.user._id,
+                mailStatus: newDoc.emailMethod === 'automatic',
                 team,
             })),
         ];
@@ -441,7 +473,12 @@ export const setInvite = (Rooms) => async (request, reply) => {
             for (let contributor of invites) {
                 room.userData.set(
                     contributor._id.toString(),
-                    userData({ ...contributor, team }),
+                    userData({
+                        ...contributor,
+                        team,
+                        invitor: request.user._id.toString(),
+                        mailStatus: newDoc.emailMethod === 'automatic',
+                    }),
                 );
             }
             broadcastToDoc(room);
@@ -467,26 +504,30 @@ export const setInvite = (Rooms) => async (request, reply) => {
                 });
                 //  send email to invited user who are not registered yet.
                 //  sending email part must be in setTimeout because that cause error.
-                setTimeout(() => {
-                    sendInvitationEmailToNew(
-                        request.user,
-                        contributor,
-                        newDoc,
-                        token,
-                    );
-                }, k * 1000);
+                if (newDoc.emailMethod === 'automatic') {
+                    setTimeout(() => {
+                        sendInvitationEmailToNew(
+                            request.user,
+                            contributor,
+                            newDoc,
+                            token,
+                        );
+                    }, k * 1000);
+                }
             } else {
                 if (contributor.status !== USER_STATUS.ACTIVE) {
                     nonActiveUsers.push(contributor);
                 }
                 //  send email to exist user to join the document.
-                setTimeout(() => {
-                    sendInvitationEmailToExist(
-                        request.user,
-                        contributor,
-                        newDoc,
-                    );
-                }, k * 1000);
+                if (newDoc.emailMethod === 'automatic') {
+                    setTimeout(() => {
+                        sendInvitationEmailToExist(
+                            request.user,
+                            contributor,
+                            newDoc,
+                        );
+                    }, k * 1000);
+                }
                 //  send notification to users who are invited whether those status are not active
                 _notifications.push({
                     to: contributor._id,
@@ -850,6 +891,7 @@ export const handleInvitation = (Rooms) => async (request, reply) => {
                 request.user._id.toString(),
                 userData({
                     ...request.user,
+                    invitor,
                     team,
                     reply: 'accept',
                 }),
@@ -924,6 +966,94 @@ export const setInvitation = async (request, reply) => {
         });
     } catch (e) {
         console.log('document@create-room-error:', e);
+        return reply.code(500).send({
+            code: HTTP_RES_CODE.ERROR,
+            data: {},
+            message: 'Unexpected Server Error Occured.',
+        });
+    }
+};
+
+export const sendEmailToInvitors = (Rooms) => async (request, reply) => {
+    const { uniqueId } = request.params;
+    const { invites } = request.body;
+    try {
+        let doc = await DocumentModel.findById(uniqueId);
+        doc.invites = doc.invites.map((item) => ({
+            ...item,
+            mailStatus: invites.includes(item._id.toString())
+                ? true
+                : item.mailStatus,
+        }));
+        await doc.save();
+
+        if (Rooms.has(doc._id.toString())) {
+            const room = Rooms.get(doc._id.toString());
+            let x = false;
+            for (let inv of invites) {
+                if (inv && typeof inv === 'string') {
+                    x = true;
+                    room.userData.set(
+                        inv,
+                        userData({
+                            ...room.userData.get(inv),
+                            mailStatus: true,
+                        }),
+                    );
+                }
+            }
+            if (x) broadcastToDoc(room);
+        }
+
+        return reply.send({
+            code: HTTP_RES_CODE.SUCCESS,
+            data: {},
+            message: '',
+        });
+    } catch (e) {
+        console.log('document@error:', e);
+        return reply.code(500).send({
+            code: HTTP_RES_CODE.ERROR,
+            data: {},
+            message: 'Unexpected Server Error Occured.',
+        });
+    }
+};
+
+export const sendEmailToInvitor = (Rooms) => async (request, reply) => {
+    const { uniqueId } = request.params;
+    const { to } = request.body;
+    try {
+        let doc = await DocumentModel.findById(uniqueId);
+        doc.invites = doc.invites.map((item) => ({
+            ...item,
+            mailStatus: to._id === item._id ? true : item.mailStatus,
+        }));
+        await doc.save();
+
+        if (Rooms.has(doc._id.toString())) {
+            const room = Rooms.get(doc._id.toString());
+            room.userData.set(
+                to._id,
+                userData({
+                    ...room.userData.get(to._id),
+                    mailStatus: true,
+                }),
+            );
+            broadcastToDoc(room);
+        }
+
+        setTimeout(() => {
+            sendInvitationEmailToUser(request.user, to, doc);
+        });
+
+        return reply.send({
+            code: HTTP_RES_CODE.SUCCESS,
+            data: {},
+            message: '',
+        });
+    } catch (e) {
+        console.log('document@error:', e);
         return reply.code(500).send({
             code: HTTP_RES_CODE.ERROR,
             data: {},

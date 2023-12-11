@@ -10,6 +10,8 @@ import {
     handleInvitation,
     handleInvite,
     handleNewTeam,
+    sendEmailToInvitor,
+    sendEmailToInvitors,
     setInvitation,
     setInvite,
     update,
@@ -242,6 +244,28 @@ const documentRouter = (fastify, opts, done) => {
             }),
         },
         setInvitation,
+    );
+
+    //  set email to invitors -post'/:uniqueId/sendEmail'
+    fastify.post(
+        '/:uniqueId/sendEmail',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        sendEmailToInvitors(Rooms),
+    );
+
+    //  set email to invitor -put'/:uniqueId/sendEmail'
+    fastify.put(
+        '/:uniqueId/sendEmail',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        sendEmailToInvitor(Rooms),
     );
 
     //  handle invitation-put'/:uniqueId/t'

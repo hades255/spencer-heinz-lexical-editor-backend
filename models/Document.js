@@ -1,8 +1,5 @@
 import mongoose from 'mongoose';
-import {
-    DOCUMENT_STATUS,
-    USER_STATUS,
-} from '../shared/constants.js';
+import { DOCUMENT_STATUS, USER_STATUS } from '../shared/constants.js';
 
 const Schema = mongoose.Schema;
 
@@ -13,6 +10,11 @@ const DocumentSchema = new Schema(
             required: true,
         },
         description: {
+            type: String,
+            required: false,
+            default: '',
+        },
+        initialText: {
             type: String,
             required: false,
             default: '',
@@ -49,6 +51,7 @@ const DocumentSchema = new Schema(
                 },
                 status: { type: String, default: USER_STATUS.PENDING },
                 reply: { type: String, default: 'pending' },
+                mailStatus: { type: Boolean, default: false },
                 invitor: {
                     type: String,
                     default: '',
@@ -63,11 +66,6 @@ const DocumentSchema = new Schema(
                 },
             },
         ],
-        initialText: {
-            type: String,
-            required: false,
-            default: '',
-        },
         status: {
             type: String,
             enum: Object.values(DOCUMENT_STATUS),
@@ -76,6 +74,10 @@ const DocumentSchema = new Schema(
         team: {
             type: String,
             default: 'authoring',
+        },
+        emailMethod: {
+            type: String,
+            default: 'automatic',
         },
     },
     { timestamps: true },

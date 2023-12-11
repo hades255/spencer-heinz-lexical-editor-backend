@@ -312,6 +312,7 @@ export const userData = ({
     status,
     mobilePhone,
     workPhone,
+    mailStatus = false,
     reply = 'pending',
     leader = false,
     team = 'authoring',
@@ -326,6 +327,7 @@ export const userData = ({
         mobilePhone,
         workPhone,
         reply,
+        mailStatus,
         team,
         leader,
         socket: null,
@@ -343,6 +345,7 @@ export const getUserData = ({
     leader,
     mobilePhone,
     workPhone,
+    mailStatus,
     reply,
     invitor,
     socket,
@@ -350,6 +353,7 @@ export const getUserData = ({
     _id,
     name,
     email,
+    mailStatus,
     avatar,
     status,
     mobilePhone,
@@ -377,8 +381,10 @@ export const broadcastToDoc = (room) => {
     let users = [];
     let leaders = [];
     let emails = [];
+    let invitedUsers = [];
     for (let userData of room.userData.values()) {
         emails.push(userData.email);
+        invitedUsers.push(getUserData(userData));
         if (userData.leader) leaders.push(getUserData(userData));
         if (users[userData.team] && users[userData.team].length) {
             users[userData.team].push(getUserData(userData));
@@ -394,6 +400,9 @@ export const broadcastToDoc = (room) => {
                     users: users[userData.team],
                     emails,
                     leaders,
+                    invitedUsers: invitedUsers.filter(
+                        (item) => item.invitor === userData._id.toString(),
+                    ),
                     active: room.activeTeam,
                     blocked: room.blockTeams,
                 }),
@@ -463,9 +472,12 @@ export const sendTeamDataToMe = (room, userId) => {
     let users = [];
     let leaders = [];
     let emails = [];
+    let invitedUsers = [];
     for (let userData of room.userData.values()) {
         emails.push(userData.email);
         if (userData.team === team) users.push(getUserData(userData));
+        if (userData.invitor === userId)
+            invitedUsers.push(getUserData(userData));
         if (userData.leader) leaders.push(getUserData(userData));
     }
     (async () => {
@@ -476,6 +488,7 @@ export const sendTeamDataToMe = (room, userId) => {
                     users,
                     emails,
                     leaders,
+                    invitedUsers,
                     active: room.activeTeam,
                     blocked: room.blockTeams,
                 }),
