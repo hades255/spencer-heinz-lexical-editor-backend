@@ -69,16 +69,16 @@ export const update = (Rooms) => async (request, reply) => {
                 k++;
                 if (contributor.status === USER_STATUS.INVITED) {
                     const token = generateSecretString(
-                        request.user.email,
-                        contributor.email,
+                        request.user._id,
+                        contributor._id,
                         document._id,
                     );
-                    _invites.push({
-                        creator: request.user,
-                        contributor,
-                        document,
-                        token,
-                    });
+                    // _invites.push({
+                    //     creator: request.user,
+                    //     contributor,
+                    //     document,
+                    //     token,
+                    // });
                     if (document.emailMethod === 'automatic') {
                         setTimeout(() => {
                             sendInvitationEmailToNew(
@@ -246,16 +246,16 @@ export const create = (Rooms) => async (request, reply) => {
                 k++;
                 if (contributor.status === USER_STATUS.INVITED) {
                     const token = generateSecretString(
-                        request.user.email,
-                        contributor.email,
+                        request.user._id,
+                        contributor._id,
                         newDoc._id,
                     );
-                    _invites.push({
-                        creator: request.user,
-                        contributor,
-                        document: newDoc,
-                        token,
-                    });
+                    // _invites.push({
+                    //     creator: request.user,
+                    //     contributor,
+                    //     document: newDoc,
+                    //     token,
+                    // });
                     if (emailMethod === 'automatic') {
                         setTimeout(() => {
                             sendInvitationEmailToNew(
@@ -492,16 +492,16 @@ export const setInvite = (Rooms) => async (request, reply) => {
             if (contributor.status === USER_STATUS.INVITED) {
                 //  send invitation email to manually created user
                 const token = generateSecretString(
-                    request.user.email,
-                    contributor.email,
+                    request.user._id,
+                    contributor._id,
                     newDoc._id,
                 );
-                _invites.push({
-                    creator: request.user,
-                    contributor,
-                    document: newDoc,
-                    token,
-                });
+                // _invites.push({
+                //     creator: request.user,
+                //     contributor,
+                //     document: newDoc,
+                //     token,
+                // });
                 //  send email to invited user who are not registered yet.
                 //  sending email part must be in setTimeout because that cause error.
                 if (newDoc.emailMethod === 'automatic') {
@@ -658,6 +658,7 @@ export const handleInvite = (Rooms) => async (request, reply) => {
                 status === 'accept'
                     ? doc.invites.map((invite) => ({
                           ...invite,
+                          status: USER_STATUS.ACTIVE,
                           reply:
                               invite._id.toString() ===
                               request.user._id.toString()
@@ -678,6 +679,7 @@ export const handleInvite = (Rooms) => async (request, reply) => {
                         request.user._id.toString(),
                         userData({
                             ...room.userData.get(request.user._id.toString()),
+                            status: USER_STATUS.ACTIVE,
                             reply: 'accept',
                         }),
                     );

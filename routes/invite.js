@@ -3,24 +3,27 @@ import DocumentModel from '../models/Document.js';
 import UserModel from '../models/User.js';
 import InviteModel from '../models/invite.js';
 import { HTTP_RES_CODE, USER_STATUS } from '../shared/constants.js';
-import { createAuthToken } from '../shared/helpers.js';
+import { compareDate, createAuthToken, decodeUrl } from '../shared/helpers.js';
 
 const inviteRouter = (fastify, opts, done) => {
     fastify.get('/mail', async (request, reply) => {
         try {
-            await transporter.sendMail({
-                from: process.env.SERVER_MAIL_ADDRESS,
-                to: 'hades.255@outlook.com',
-                subject: `invited you to his document.`,
-                html: `<a href="${process.env.FRONTEND_ADDRESS}">Click Here</a>`,
-            });
+            const mailOptions = {
+                from: '<spencer.heinz@gmail.com>', // sender address
+                to: 'montgasam@gmail.com', // list of receivers
+                subject: 'Hello', // Subject line
+                text: 'Hello world', // plaintext body
+                html: '<b>Hello world</b>', // html body
+            };
+
+            await transporter.sendMail(mailOptions);
 
             return reply.code(404).send({
                 code: HTTP_RES_CODE.ERROR,
-                message: 'no invitation found',
+                message: 'OK',
             });
         } catch (error) {
-            console.log('invite@get-error:', error);
+            console.log('email@get-error:', error);
             return reply.code(500).send({
                 code: HTTP_RES_CODE.ERROR,
                 data: { error },
@@ -28,40 +31,39 @@ const inviteRouter = (fastify, opts, done) => {
             });
         }
     });
-    fastify.get('/:token', async (request, reply) => {
+
+    fastify.get('/', async (request, reply) => {
         try {
-            const invite = await InviteModel.findOne({
-                token: request.params.token,
-            });
-            if (invite) {
-                const user = await UserModel.findById(invite.contributor._id);
-                if (user.status !== USER_STATUS.INVITED) {
-                    return reply.send({
-                        code: HTTP_RES_CODE.ERROR,
-                        data: {
-                            user: invite.contributor,
-                            document: invite.document,
-                            creator: invite.creator,
-                        },
-                        message: '',
-                    });
+            const { token } = request.query;
+            const data = decodeUrl(token);
+            const creator = await UserModel.findById(data.f);
+            const document = await DocumentModel.findById(data.d);
+            const me = document.invites.find((item) => item._id === data.t);
+            let error = null;
+            if (compareDate(data.x)) {
+                error = 403;
+            } else {
+                if (document && me) {
+                    const user = await UserModel.findById(me._id);
+                    if (user.status === USER_STATUS.INVITED) {
+                        return reply.send({
+                            code: HTTP_RES_CODE.SUCCESS,
+                            data: {
+                                document,
+                                user,
+                                creator,
+                            },
+                            message: '',
+                        });
+                    }
                 }
-                const document = await DocumentModel.findById(
-                    invite.document._id,
-                );
-                return reply.send({
-                    code: HTTP_RES_CODE.SUCCESS,
-                    data: {
-                        user,
-                        document,
-                        creator: invite.creator,
-                    },
-                    message: '',
-                });
+                error = 404;
             }
-            return reply.code(404).send({
+            console.log('invite@not user:', error);
+            return reply.code(error).send({
                 code: HTTP_RES_CODE.ERROR,
-                message: 'no invitation found',
+                data: { error },
+                message: 'Unexpected Server Error Occured.',
             });
         } catch (error) {
             console.log('invite@get-error:', error);
@@ -73,45 +75,20 @@ const inviteRouter = (fastify, opts, done) => {
         }
     });
 
-    fastify.post('/:token', async (request, reply) => {
+    fastify.post('/', async (request, reply) => {
         try {
-            //  first, find invites which has current token
-            const invite = await InviteModel.findOne({
-                token: request.params.token,
-            });
-            //  if invite exists
-            if (invite) {
-                //  if user handled invite, don't work again
-                if (invite.status === 'done') {
-                    return reply.code(404).send({
-                        code: HTTP_RES_CODE.ERROR,
-                        message: '',
-                    });
-                }
-                //  get user invited
-                const user = await UserModel.findById(invite.contributor._id);
-                //  set user's status as active, and pwd as inputed pwd
-                user.status = USER_STATUS.ACTIVE;
-                user.password = request.body.password;
-                user.save();
-                //  make user login
-                const serviceToken = createAuthToken(user);
-                //  set invite status
-                invite.status = 'done';
-                invite.save();
-                return reply.send({
-                    code: HTTP_RES_CODE.SUCCESS,
-                    data: {
-                        serviceToken,
-                        // user,
-                        // document: invite.document,
-                    },
-                    message: '',
-                });
-            }
-            return reply.code(404).send({
-                code: HTTP_RES_CODE.ERROR,
-                message: 'no invitation found',
+            const { password, uid, did } = request.body;
+            const user = await UserModel.findById(uid);
+            user.password = password;
+            user.status = USER_STATUS.ACTIVE;
+            user.save();
+            const serviceToken = createAuthToken(user);
+            return reply.send({
+                code: HTTP_RES_CODE.SUCCESS,
+                data: {
+                    serviceToken,
+                },
+                message: '',
             });
         } catch (error) {
             console.log('invite@get-error:', error);

@@ -1,15 +1,62 @@
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET_KEY } from '../conf.js';
-import * as Y from 'yjs';
 
-import crypto from 'crypto';
+import base64url from 'base64url';
+// import crypto from 'crypto';
 import { transporter } from '../app.js';
 
-export const generateSecretString = (...val) => {
-    const secretString = JSON.toString({ ...val });
-    const hash = crypto.createHash('sha256').update(secretString).digest('hex');
-    return hash;
+export const generateSecretString = (from, to, doc, expired = 30) => {
+    const x = base64url(
+        JSON.stringify({
+            f: from,
+            t: to,
+            d: doc,
+            x:
+                expired === 100
+                    ? 0
+                    : new Date().getTime() + expired * 24 * 3600 * 1000,
+        }),
+    );
+    return x;
 };
+export const decodeUrl = (url) => {
+    return JSON.parse(base64url.decode(url));
+};
+
+export const compareDate = (d) => {
+    return d < new Date().getTime();
+};
+// export const generateSecretString = (...val) => {
+//     const secretString = JSON.toString({ ...val });
+//     const hash = crypto.createHash('sha256').update(secretString).digest('hex');
+//     return hash;
+// };
+
+// export const generateSecretString = (...val) => {
+//     const x = [...val];
+//     const secretString = x.toString();
+
+//     return encrypt(secretString);
+
+//     // const hash = crypto.createHash('sha256').update(secretString).digest('hex');
+//     // return hash;
+// };
+// const key = 'passwordpasswordpasswordpassword';
+// const algorithm = 'aes-256-cbc';
+// export const encrypt = (text) => {
+//     const iv = crypto.randomBytes(16);
+//     const cipher = crypto.createCipheriv(algorithm, key, iv);
+//     let encryptedData = cipher.update(text, 'utf8', 'hex');
+//     encryptedData += cipher.final('hex');
+//     return encryptedData;
+// };
+// export const decrypt = (text) => {
+//     const iv = crypto.randomBytes(16);
+//     const decipher = crypto.createDecipheriv(algorithm, key, iv);
+//     let decryptedData = decipher.update(text, 'hex', 'utf8');
+//     decryptedData += decipher.final('utf8');
+//     return decryptedData;
+// };
 
 export const generateRandomString = (length) => {
     const characters =
@@ -90,7 +137,6 @@ export const sendEmail = async (mail) => {
 };
 
 export const sendChangedRoleEmail = (to, role) => {
-    return;
     sendEmail({
         from: process.env.SERVER_MAIL_ADDRESS,
         to: to.email,
@@ -136,7 +182,6 @@ export const sendChangedRoleEmail = (to, role) => {
 };
 
 export const sendInvitationEmailToExist = (from, to, doc) => {
-    return;
     sendEmail({
         from: process.env.SERVER_MAIL_ADDRESS,
         to: to.email,
@@ -193,7 +238,6 @@ export const sendInvitationEmailToExist = (from, to, doc) => {
     });
 };
 export const sendInvitationEmailToNew = (from, to, doc, token) => {
-    return;
     sendEmail({
         from: process.env.SERVER_MAIL_ADDRESS,
         to: to.email,
@@ -229,7 +273,7 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
           <div>
             Click
             <a
-              href="${process.env.FRONTEND_ADDRESS || ''}/invites/${token}"
+              href="${process.env.FRONTEND_ADDRESS || ''}/invite/${token}"
               style="
                 padding: 8px;
                 background-color: #1677ff;
@@ -284,7 +328,7 @@ export const sendInvitationEmailToUser = (from, to, doc) => {
             <a
               href="${
                   to.status === 'invited'
-                      ? `${process.env.FRONTEND_ADDRESS || ''}/invites/${token}`
+                      ? `${process.env.FRONTEND_ADDRESS || ''}/invite/${token}`
                       : `${process.env.FRONTEND_ADDRESS || ''}/document/${
                             doc._id
                         }?email=${to.email}`
@@ -306,7 +350,6 @@ export const sendInvitationEmailToUser = (from, to, doc) => {
     });
 };
 export const sendInvitationToMail = (user, doc, emails, url) => {
-    return;
     sendEmail({
         from: process.env.SERVER_MAIL_ADDRESS,
         to: emails.join(','),

@@ -40,7 +40,14 @@ const notificationRouter = (fastify, opts, done) => {
             try {
                 const notifications = await NotificationModel.find({
                     $or: [
-                        { to: { $eq: '' } },
+                        {
+                            to: {
+                                $eq:
+                                    request.user.role === USER_ROLES.SUPERADMIN
+                                        ? USER_ROLES.ADMIN
+                                        : request.user.role,
+                            },
+                        },
                         { to: { $eq: request.user._id } },
                     ],
                 }).sort({ createdAt: -1 });

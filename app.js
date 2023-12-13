@@ -17,7 +17,9 @@ import fastifyCookie from '@fastify/cookie';
 import fastifySession from '@fastify/session';
 import { Authenticator } from '@fastify/passport';
 
+import AWS from 'aws-sdk';
 import nodemailer from 'nodemailer';
+import smtpTransport from 'nodemailer-smtp-transport';
 // models
 
 // routes
@@ -64,13 +66,35 @@ fastify.register(fastifyWebSocket, {
     connectionOptions: { readableObjectMode: true }, // can include other duplex options
 });
 
-export const transporter = nodemailer.createTransport({
+AWS.config.update({
+    accessKeyId: 'AKIA4DF2YTWT7TTCMGG6',
+    secretAccessKey: 'BJq3rZBq6GLoaUAjhGIPU/aFkqZlSOtoIjarsA/E3MNX|',
+    region: 'us-east-1',
+});
+
+// export const transporter = nodemailer.createTransport({
+//     SES: new AWS.SES({ apiVersion: '2010-12-01' }),
+// });
+export const transporter = nodemailer.createTransport(
+    // smtpTransport(
+    {
+        host: 'email-smtp.us-east-1.amazonaws.com',
+        port: 465,
+        secure: true,
+        auth: {
+            user: 'AKIA4DF2YTWT7TTCMGG6',
+            pass: 'BJq3rZBq6GLoaUAjhGIPU/aFkqZlSOtoIjarsA/E3MNX',
+        },
+    },
+    // ),
+);
+/*nodemailer.createTransport({
     service: process.env.SERVER_MAIL_SERVICE || '',
     auth: {
         user: process.env.SERVER_MAIL_ADDRESS || '',
         pass: process.env.SERVER_MAIL_PASSWORD || '',
     },
-});
+});*/
 
 // create decorator
 fastify.decorate('appData', {
