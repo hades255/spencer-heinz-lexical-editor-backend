@@ -609,6 +609,32 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
+    //  get collaborate users
+    fastify.get(
+        '/collaborates',
+        {
+            preValidation: fastifyPassport.authenticate('protected', {
+                session: false,
+            }),
+        },
+        async (req, res) => {
+            try {
+                const user = await UserModel.findById(req.user._id);
+                return res.send({
+                    code: HTTP_RES_CODE.SUCCESS,
+                    data: user.collaborates,
+                });
+            } catch (e) {
+                console.log('user@collaborates-get-error:', e);
+                return res.code(500).send({
+                    code: HTTP_RES_CODE.ERROR,
+                    data: {},
+                    message: 'Unexpected Server Error Occured.',
+                });
+            }
+        },
+    );
+
     done();
 };
 

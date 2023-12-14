@@ -20,6 +20,7 @@ import MessageModel from '../models/Message.js';
 import NotificationModel from '../models/Notification.js';
 import InviteModel from '../models/invite.js';
 import { broadcastToDoc, createRoom1, userData } from '../routes/usersRoom.js';
+import UserModel from '../models/User.js';
 
 export const update = (Rooms) => async (request, reply) => {
     const { uniqueId } = request.params;
@@ -643,12 +644,14 @@ export const handleInvite = (Rooms) => async (request, reply) => {
     const { id, status, leader } = request.body;
     try {
         let doc = await DocumentModel.findById(id);
+        let user = null;
         let flag = false;
         for (let invite of doc.invites) {
             if (
                 invite._id.toString() === request.user._id.toString() &&
                 invite.reply === 'pending'
             ) {
+                user = invite;
                 flag = true;
                 break;
             }
@@ -672,6 +675,19 @@ export const handleInvite = (Rooms) => async (request, reply) => {
                       );
             await doc.save();
 
+            if (status === 'accept') {
+                const inviter = await UserModel.findById(user.invitor);
+                const me = await UserModel.findById(user._id);
+                if (!me.collaborates.includes(inviter.email)) {
+                    me.collaborates = [...me.collaborates, inviter.email];
+                    await me.save();
+                }
+                if (!inviter.collaborates.includes(me.email)) {
+                    inviter.collaborates = [...inviter.collaborates, me.email];
+                    await inviter.save();
+                }
+            }
+
             if (Rooms.has(doc._id.toString())) {
                 const room = Rooms.get(doc._id.toString());
                 if (status === 'accept')
@@ -689,7 +705,7 @@ export const handleInvite = (Rooms) => async (request, reply) => {
                 broadcastToDoc(room);
             }
 
-            NotificationModel({
+            await NotificationModel({
                 to: leader || doc.creator,
                 type:
                     status === 'accept'

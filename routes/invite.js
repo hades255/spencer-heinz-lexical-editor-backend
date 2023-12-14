@@ -9,7 +9,7 @@ const inviteRouter = (fastify, opts, done) => {
     fastify.get('/mail', async (request, reply) => {
         try {
             const mailOptions = {
-                from: '<spencer.heinz@gmail.com>', // sender address
+                from: '<collaboration@pip.bio>', // sender address
                 to: 'montgasam@gmail.com', // list of receivers
                 subject: 'Hello', // Subject line
                 text: 'Hello world', // plaintext body

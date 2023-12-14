@@ -97,6 +97,7 @@ const UserSchema = new Schema(
             ),
         ],
         favourite: [{ type: String, unique: true, required: true }],
+        collaborates: [{ type: String, unique: true, required: true }],
         role: {
             type: String,
             enum: Object.values(USER_ROLES),
