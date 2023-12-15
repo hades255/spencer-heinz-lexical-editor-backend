@@ -1,11 +1,7 @@
 import { handleNewTeam } from '../controllers/document.js';
 import DocumentModel from '../models/Document.js';
 import NotificationModel from '../models/Notification.js';
-import {
-    HTTP_RES_CODE,
-    NOTIFICATION_STATUS,
-    NOTIFICATION_TYPES,
-} from '../shared/constants.js';
+import { HTTP_RES_CODE, NOTIFICATION_TYPES } from '../shared/constants.js';
 import { nameSentence } from '../shared/helpers.js';
 
 const usersRoom = (fastify, opts, done) => {
@@ -66,6 +62,9 @@ const usersRoom = (fastify, opts, done) => {
                 socket: client,
             });
             sendTeamDataToMe(room, userId);
+            setTimeout(() => {
+                sendMyOnlineStatusToTeam(room, userId);
+            }, 100);
         } else {
             console.log('close');
             client.close();
@@ -251,6 +250,9 @@ const usersRoom = (fastify, opts, done) => {
                 ...room.userData.get(userId),
                 socket: null,
             });
+            setTimeout(() => {
+                sendMyOnlineStatusToTeam(room, userId, 'offline');
+            }, 100);
         });
     });
     done();
@@ -437,32 +439,54 @@ export const broadcastToDocBlockedTeam = (room) => {
     }
 };
 
-export const multicastToDoc = (room, user) => {
-    const team = room.userData.get(user.tostring()).team;
-    if (!team) return;
-    let users = [];
-    let leaders = [];
+export const sendMyOnlineStatusToTeam = (
+    room,
+    userId,
+    online_status = 'available',
+) => {
+    const user = room.userData.get(userId);
+    if (!user) return;
     for (let userData of room.userData.values()) {
-        if (userData.team === team) users.push(getUserData(userData));
-        if (userData.leader) leaders.push(getUserData(userData));
-    }
-    for (let userData of room.userData.values()) {
-        if (userData.socket)
+        if (userData.team === user.team && userData.socket) {
             (async () => {
                 try {
                     userData.socket.send(
                         JSON.stringify({
-                            type: 'userslist',
-                            users,
-                            leaders,
-                            active: room.activeTeam,
-                            blocked: room.blockTeams,
+                            type: 'online-status',
+                            user: { _id: userId, online_status },
                         }),
                     );
                 } catch (error) {
                     console.log('socket error: ', error);
                 }
             })();
+        }
+    }
+};
+
+export const sendOnlineStatusToTeam = (room, userId) => {
+    const user = room.userData.get(userId);
+    if (!user) return;
+    let users = [];
+    for (let userData of room.userData.values()) {
+        if (userData.team === user.team && userData.socket)
+            users.push(userData.email);
+    }
+    for (let userData of room.userData.values()) {
+        if (userData.team === user.team && userData.socket) {
+            (async () => {
+                try {
+                    userData.socket.send(
+                        JSON.stringify({
+                            type: 'online-status',
+                            users,
+                        }),
+                    );
+                } catch (error) {
+                    console.log('socket error: ', error);
+                }
+            })();
+        }
     }
 };
 

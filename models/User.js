@@ -39,7 +39,7 @@ const UserSchema = new Schema(
         setting: {
             hide: {
                 type: Boolean,
-                default: false,
+                default: true,
             },
             loginNotification: {
                 type: Boolean,

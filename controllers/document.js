@@ -757,6 +757,8 @@ export const handleInvite = (Rooms) => async (request, reply) => {
     }
 };
 
+//  make a new team with a user that is exist in the system but didn't conllaborate on the document
+//  set invitation first
 export const handleNewTeam = async (
     uniqueId,
     room,
