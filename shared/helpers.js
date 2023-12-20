@@ -4,27 +4,28 @@ import { JWT_SECRET_KEY } from '../conf.js';
 import base64url from 'base64url';
 // import crypto from 'crypto';
 import { transporter } from '../app.js';
+import { getFrontendPath } from './env.js';
 
 export const generateSecretString = (from, to, doc, expired = 30) => {
-  const x = base64url(
-    JSON.stringify({
-      f: from,
-      t: to,
-      d: doc,
-      x:
-        expired === 100
-          ? 0
-          : new Date().getTime() + expired * 24 * 3600 * 1000,
-    }),
-  );
-  return x;
+    const x = base64url(
+        JSON.stringify({
+            f: from,
+            t: to,
+            d: doc,
+            x:
+                expired === 100
+                    ? 0
+                    : new Date().getTime() + expired * 24 * 3600 * 1000,
+        }),
+    );
+    return x;
 };
 export const decodeUrl = (url) => {
-  return JSON.parse(base64url.decode(url));
+    return JSON.parse(base64url.decode(url));
 };
 
 export const compareDate = (d) => {
-  return d < new Date().getTime();
+    return d < new Date().getTime();
 };
 // export const generateSecretString = (...val) => {
 //     const secretString = JSON.toString({ ...val });
@@ -59,89 +60,92 @@ export const compareDate = (d) => {
 // };
 
 export const generateRandomString = (length) => {
-  const characters =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let randomString = '';
+    const characters =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let randomString = '';
 
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length);
-    randomString += characters[randomIndex];
-  }
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        randomString += characters[randomIndex];
+    }
 
-  return randomString;
+    return randomString;
 };
 
 export const nameSentence = (names, suffix = ' other clients') => {
-  switch (names.length) {
-    case 0:
-      return '';
-    case 1:
-      return names[0];
-    case 2:
-      return names[0] + ' and ' + names[1];
-    case 3:
-      return names[0] + ', ' + names[1] + ' and ' + names[2];
-    default:
-      return (
-        names[0] +
-        ', ' +
-        names[1] +
-        ' and ' +
-        (names.length - 2) +
-        suffix
-      );
-  }
+    switch (names.length) {
+        case 0:
+            return '';
+        case 1:
+            return names[0];
+        case 2:
+            return names[0] + ' and ' + names[1];
+        case 3:
+            return names[0] + ', ' + names[1] + ' and ' + names[2];
+        default:
+            return (
+                names[0] +
+                ', ' +
+                names[1] +
+                ' and ' +
+                (names.length - 2) +
+                suffix
+            );
+    }
 };
 
 export const createAuthToken = (user, expireTime = '1d') => {
-  const token = jwt.sign(
-    {
-      user: {
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        avatar: user.avatar,
-        role: user.role,
-        status: user.status,
-        mobilePhone: user.mobilePhone,
-        workPhone: user.workPhone,
-      },
-    },
-    JWT_SECRET_KEY,
-    {
-      expiresIn: expireTime,
-    },
-  );
-  return token;
+    const token = jwt.sign(
+        {
+            user: {
+                _id: user._id,
+                email: user.email,
+                name: user.name,
+                avatar: user.avatar,
+                role: user.role,
+                status: user.status,
+                mobilePhone: user.mobilePhone,
+                workPhone: user.workPhone,
+            },
+        },
+        JWT_SECRET_KEY,
+        {
+            expiresIn: expireTime,
+        },
+    );
+    return token;
 };
 
 export const getByValue = (map, searchValue) => {
-  for (let [key, value] of map.entries()) {
-    if (value === searchValue) return key;
-  }
+    for (let [key, value] of map.entries()) {
+        if (value === searchValue) return key;
+    }
 };
 
 export const getDocNameByYDoc = (rooms, doc) => {
-  for (let [key, value] of rooms.entries()) {
-    if (value.yDoc === doc) return key;
-  }
-  return false;
+    for (let [key, value] of rooms.entries()) {
+        if (value.yDoc === doc) return key;
+    }
+    return false;
 };
 
 export const sendEmail = async ({ ...mail }) => {
-  try {
-    await transporter.sendMail({ ...mail, to: process.env.SERVER_MAIL_ADDRESS });
-  } catch (error) {
-    console.error('Email Error: ', error);
-  }
+    try {
+        await transporter.sendMail({
+            ...mail,
+            to: process.env.SERVER_MAIL_ADDRESS,
+        });
+    } catch (error) {
+        console.error('Email Error: ', error);
+    }
 };
 
 export const sendChangedRoleEmail = (to, role) => {
-  sendEmail({
-    from: process.env.SERVER_MAIL_ADDRESS,
-    to: to.email,
-    subject: `Your role has been set as ${role}.`,
-    html: `
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `Your role has been set as ${role}.`,
+        html: `
         <div style="display: flex; justify-content: center">
           <div
             style="
@@ -163,7 +167,7 @@ export const sendChangedRoleEmail = (to, role) => {
               <div>
                 Click
                 <a
-                  href="${process.env.FRONTEND_ADDRESS || ''}"
+                  href="${getFrontendPath()}"
                   style="
                     padding: 8px;
                     background-color: #1677ff;
@@ -178,15 +182,15 @@ export const sendChangedRoleEmail = (to, role) => {
             </div>
           </div>
         </div>`,
-  });
+    });
 };
 
 export const sendInvitationEmailToExist = (from, to, doc) => {
-  sendEmail({
-    from: process.env.SERVER_MAIL_ADDRESS,
-    to: to.email,
-    subject: `${from.name} invited you to his document.`,
-    html: `
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `${from.name} invited you to his document.`,
+        html: `
       <div style="display: flex; justify-content: center">
         <div
           style="
@@ -218,8 +222,9 @@ export const sendInvitationEmailToExist = (from, to, doc) => {
             <div>
               Click
               <a
-                href="${process.env.FRONTEND_ADDRESS || ''}/document/${doc._id
-      }?email=${to.email}"
+                href="${getFrontendPath()}/document/${doc._id}?email=${
+                    to.email
+                }"
                 style="
                   padding: 8px;
                   background-color: #1677ff;
@@ -234,14 +239,14 @@ export const sendInvitationEmailToExist = (from, to, doc) => {
           </div>
         </div>
       </div>`,
-  });
+    });
 };
 export const sendInvitationEmailToNew = (from, to, doc, token) => {
-  sendEmail({
-    from: process.env.SERVER_MAIL_ADDRESS,
-    to: to.email,
-    subject: `${from.name} invited you to his document.`,
-    html: `<div style="display: flex; justify-content: center">
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `${from.name} invited you to his document.`,
+        html: `<div style="display: flex; justify-content: center">
       <div
         style="
           width: 100%;
@@ -272,7 +277,7 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
           <div>
             Click
             <a
-              href="${process.env.FRONTEND_ADDRESS || ''}/invite/${token}"
+              href="${getFrontendPath()}/invite/${token}"
               style="
                 padding: 8px;
                 background-color: #1677ff;
@@ -287,14 +292,14 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
         </div>
       </div>
     </div>`,
-  });
+    });
 };
 export const sendInvitationEmailToUser = (from, to, doc) => {
-  sendEmail({
-    from: process.env.SERVER_MAIL_ADDRESS,
-    to: to.email,
-    subject: `${from.name} invited you to his document.`,
-    html: `<div style="display: flex; justify-content: center">
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `${from.name} invited you to his document.`,
+        html: `<div style="display: flex; justify-content: center">
       <div
         style="
           width: 100%;
@@ -325,11 +330,13 @@ export const sendInvitationEmailToUser = (from, to, doc) => {
           <div>
             Click
             <a
-              href="${to.status === 'invited'
-        ? `${process.env.FRONTEND_ADDRESS || ''}/invite/${token}`
-        : `${process.env.FRONTEND_ADDRESS || ''}/document/${doc._id
-        }?email=${to.email}`
-      }"
+              href="${
+                  to.status === 'invited'
+                      ? `${getFrontendPath()}/invite/${token}`
+                      : `${getFrontendPath()}/document/${doc._id}?email=${
+                            to.email
+                        }`
+              }"
               style="
                 padding: 8px;
                 background-color: #1677ff;
@@ -344,14 +351,14 @@ export const sendInvitationEmailToUser = (from, to, doc) => {
         </div>
       </div>
     </div>`,
-  });
+    });
 };
 export const sendInvitationToMail = (user, doc, emails, url) => {
-  sendEmail({
-    from: process.env.SERVER_MAIL_ADDRESS,
-    to: emails.join(','),
-    subject: `${user.name} has invited you to edit document`,
-    html: `<div style="display: flex; justify-content: center">
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: emails.join(','),
+        subject: `${user.name} has invited you to edit document`,
+        html: `<div style="display: flex; justify-content: center">
           <div
             style="
               width: 100%;
@@ -390,31 +397,31 @@ export const sendInvitationToMail = (user, doc, emails, url) => {
             <p><b>Description: </b> ${doc.description}</p>
           </div>
         </div>`,
-  });
+    });
 };
 
 export const findCommonElementsByKey = (arr1, arr2, key = '_id') => {
-  const commonElements = arr1.filter((obj1) =>
-    arr2.some((obj2) => obj2[key] === obj1[key]),
-  );
-  return commonElements;
+    const commonElements = arr1.filter((obj1) =>
+        arr2.some((obj2) => obj2[key] === obj1[key]),
+    );
+    return commonElements;
 };
 export const compareArrays = (A, B, key = '_id') => {
-  const elementsOnlyInA = A.filter(
-    (objA) => !B.some((objB) => objB[key] === objA[key]),
-  );
-  return elementsOnlyInA;
+    const elementsOnlyInA = A.filter(
+        (objA) => !B.some((objB) => objB[key] === objA[key]),
+    );
+    return elementsOnlyInA;
 };
 
 export const datetime = () => {
-  const currentDate = new Date();
+    const currentDate = new Date();
 
-  const hours = currentDate.getHours().toString().padStart(2, '0');
-  const minutes = currentDate.getMinutes().toString().padStart(2, '0');
-  const year = currentDate.getFullYear();
-  const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-  const day = currentDate.getDate().toString().padStart(2, '0');
+    const hours = currentDate.getHours().toString().padStart(2, '0');
+    const minutes = currentDate.getMinutes().toString().padStart(2, '0');
+    const year = currentDate.getFullYear();
+    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = currentDate.getDate().toString().padStart(2, '0');
 
-  const formattedDateTime = `${hours}:${minutes} ${month}/${day}/${year}`;
-  return formattedDateTime;
+    const formattedDateTime = `${hours}:${minutes} ${month}/${day}/${year}`;
+    return formattedDateTime;
 };

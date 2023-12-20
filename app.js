@@ -17,9 +17,9 @@ import fastifyCookie from '@fastify/cookie';
 import fastifySession from '@fastify/session';
 import { Authenticator } from '@fastify/passport';
 
-import AWS from 'aws-sdk';
+// import AWS from 'aws-sdk';
 import nodemailer from 'nodemailer';
-import smtpTransport from 'nodemailer-smtp-transport';
+// import smtpTransport from 'nodemailer-smtp-transport';
 // models
 
 // routes
@@ -30,9 +30,12 @@ import inviteRouter from './routes/invite.js';
 import usersRoom, { initUserRoom } from './routes/usersRoom.js';
 import authRouter from './routes/auth.js';
 import userRouter from './routes/user.js';
+import googleOAuth2Routes from './routes/oauth.js';
 
 import { initializeAuthSystem } from './middlewares/authentication.js';
 import { getDocNameByYDoc } from './shared/helpers.js';
+import { registerGoogleOAuth2Provider } from './shared/oauth2.js';
+import systemRouter from './routes/system.js';
 
 export const Persistence = new LeveldbPersistence('./storage-location');
 
@@ -66,18 +69,18 @@ fastify.register(fastifyWebSocket, {
     connectionOptions: { readableObjectMode: true }, // can include other duplex options
 });
 
-AWS.config.update({
-    accessKeyId: 'AKIA4DF2YTWT7TTCMGG6',
-    secretAccessKey: 'BJq3rZBq6GLoaUAjhGIPU/aFkqZlSOtoIjarsA/E3MNX|',
-    region: 'us-east-1',
-});
+// AWS.config.update({
+//     accessKeyId: 'AKIA4DF2YTWT7TTCMGG6',
+//     secretAccessKey: 'BJq3rZBq6GLoaUAjhGIPU/aFkqZlSOtoIjarsA/E3MNX|',
+//     region: 'us-east-1',
+// });
 
 // export const transporter = nodemailer.createTransport({
 //     SES: new AWS.SES({ apiVersion: '2010-12-01' }),
 // });
 // smtpTransport(
 export const transporter = nodemailer.createTransport({
-    host: 'email-smtp.us-east-1.amazonaws.com',
+    host: process.env.SERVER_MAIL_SERVICE,
     port: 465,
     secure: true,
     auth: {
@@ -186,8 +189,14 @@ export const YjsServer = createYjsServer({
 });
 
 initUserRoom(fastify);
+
+registerGoogleOAuth2Provider(fastify);
+
+fastify.register(googleOAuth2Routes, { prefix: '/oauth2' });
+
 // register route plugins
 fastify.register(authRouter, { prefix: '/auth' });
+fastify.register(systemRouter, { prefix: '/system' });
 fastify.register(userRouter, { prefix: '/user' });
 fastify.register(inviteRouter, { prefix: '/invite' });
 fastify.register(documentRouter, { prefix: '/document' });

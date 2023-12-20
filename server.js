@@ -1,10 +1,7 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import startApp from './app.js';
-import { MONGO_DB_URL } from './conf.js';
-dotenv.config({
-    path: './.env',
-});
+import { getDBPath, initEnv } from './shared/env.js';
+initEnv();
 
 process.on('uncaughtException', (err) => {
     console.log('UNCAUGHT EXCEPTION!!! shutting down...');
@@ -17,7 +14,7 @@ process.on('uncaughtException', (err) => {
  */
 // connect database
 mongoose
-    .connect(MONGO_DB_URL, {
+    .connect(getDBPath(), {
         useUnifiedTopology: true,
         useNewUrlParser: true,
     })
