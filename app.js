@@ -36,6 +36,7 @@ import { initializeAuthSystem } from './middlewares/authentication.js';
 import { getDocNameByYDoc } from './shared/helpers.js';
 import { registerGoogleOAuth2Provider } from './shared/oauth2.js';
 import systemRouter from './routes/system.js';
+import { getFrontendPath } from './shared/env.js';
 
 export const Persistence = new LeveldbPersistence('./storage-location');
 
@@ -203,6 +204,10 @@ fastify.register(documentRouter, { prefix: '/document' });
 fastify.register(notificationRouter, { prefix: '/notification' });
 fastify.register(messageRouter, { prefix: '/message' });
 fastify.register(usersRoom, { prefix: '/userrooms' });
+
+fastify.get('/', (req, res) => {
+    res.redirect(getFrontendPath());
+});
 
 const startApp = async () => {
     try {
