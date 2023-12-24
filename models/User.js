@@ -45,6 +45,10 @@ const UserSchema = new Schema(
                 type: Boolean,
                 default: true,
             },
+            loginMethod: {
+                type: String,
+                default: 'password',
+            },
         },
         comment: { type: String, default: '' },
         password: {
@@ -55,6 +59,15 @@ const UserSchema = new Schema(
         },
         lastLogonTime: {
             type: String,
+            default: '',
+        },
+        pwdResetAt: {
+            type: String,
+            default: '',
+        },
+        resetToken: {
+            type: String,
+            default: '',
         },
         status: {
             type: String,

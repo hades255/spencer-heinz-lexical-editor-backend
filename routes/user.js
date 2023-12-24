@@ -9,6 +9,8 @@ import UserModel from '../models/User.js';
 import mongoose from 'mongoose';
 import NotificationModel from '../models/Notification.js';
 import { sendChangedRoleEmail, sendEmail } from '../shared/helpers.js';
+import DocumentModel from '../models/Document.js';
+import TaskModel from '../models/Task.js';
 
 const userRouter = (fastify, opts, done) => {
     /**
@@ -126,9 +128,9 @@ const userRouter = (fastify, opts, done) => {
         },
     );
 
-    //  deprecated
-    fastify.post(
-        '/deleteUser',
+    //  delete user permanently
+    fastify.delete(
+        '/:userId/permanently',
         {
             preValidation: fastifyPassport.authenticate('protected', {
                 session: false,
@@ -136,12 +138,14 @@ const userRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
-                const { uniqueId } = request.body;
-
-                const user = await UserModel.findById(uniqueId);
-
-                await user.deleteOne();
-
+                const { userId } = request.params;
+                await UserModel.findByIdAndDelete(userId);
+                const docs = await DocumentModel.find({ creator: userId });
+                console.log(docs.map((item) => item._id));
+                await DocumentModel.deleteMany({ creator: userId });
+                await TaskModel.deleteMany({
+                    doc: { $in: docs.map((item) => item._id) },
+                });
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {},
@@ -467,6 +471,7 @@ const userRouter = (fastify, opts, done) => {
                 const user = await UserModel.findById(userId);
                 user.pwdResetAt = new Date();
                 user.password = 'Welcome123.!@#';
+                user.setting.loginMethod = 'password';
                 user.event = [
                     {
                         status: 'pwdreset',

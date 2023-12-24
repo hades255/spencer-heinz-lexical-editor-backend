@@ -15,6 +15,6 @@ export const getFrontendPath = () => frontend;
 export const initEnv = () => {
     dbPath =
         process.env.MONGO_DB_URL || 'mongodb://127.0.0.1:27017/lexical-db ';
-    frontend = process.env.FRONTEND_ADDRESS || 'http://localhost:3000/';
-    backend = process.env.REACT_APP_API_URL || 'http://localhost:8000/';
+    frontend = process.env.FRONTEND_ADDRESS || 'http://hades.pc.com:3000/';
+    backend = process.env.REACT_APP_API_URL || 'http://hades.pc.com:8000/';
 };

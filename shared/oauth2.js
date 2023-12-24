@@ -12,7 +12,7 @@ const googleOAuth2Options = {
     },
     startRedirectPath: '/oauth2/google',
     callbackUri: `${
-        process.env.REACT_APP_API_URL || 'http://localhost:8000/'
+        process.env.REACT_APP_API_URL || 'http://hades.pc.com:8000/'
     }oauth2/google/callback`,
     generateStateFunction: (request, reply) => {
         return request.query.state;

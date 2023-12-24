@@ -33,32 +33,6 @@ export const compareDate = (d) => {
 //     return hash;
 // };
 
-// export const generateSecretString = (...val) => {
-//     const x = [...val];
-//     const secretString = x.toString();
-
-//     return encrypt(secretString);
-
-//     // const hash = crypto.createHash('sha256').update(secretString).digest('hex');
-//     // return hash;
-// };
-// const key = 'passwordpasswordpasswordpassword';
-// const algorithm = 'aes-256-cbc';
-// export const encrypt = (text) => {
-//     const iv = crypto.randomBytes(16);
-//     const cipher = crypto.createCipheriv(algorithm, key, iv);
-//     let encryptedData = cipher.update(text, 'utf8', 'hex');
-//     encryptedData += cipher.final('hex');
-//     return encryptedData;
-// };
-// export const decrypt = (text) => {
-//     const iv = crypto.randomBytes(16);
-//     const decipher = crypto.createDecipheriv(algorithm, key, iv);
-//     let decryptedData = decipher.update(text, 'hex', 'utf8');
-//     decryptedData += decipher.final('utf8');
-//     return decryptedData;
-// };
-
 export const generateRandomString = (length) => {
     const characters =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -397,6 +371,49 @@ export const sendInvitationToMail = (user, doc, emails, url) => {
             <p><b>Description: </b> ${doc.description}</p>
           </div>
         </div>`,
+    });
+};
+
+export const sendPasswordResetEmail = (to, token) => {
+    sendEmail({
+        from: process.env.SERVER_MAIL_ADDRESS,
+        to: to.email,
+        subject: `Reset Password.`,
+        html: `
+      <div style="display: flex; justify-content: center">
+        <div
+          style="
+            width: 100%;
+            max-width: 600px;
+            border: 2px solid #1677ff;
+            padding: 12px;
+            border-radius: 20px;
+            background-color: lightblue;
+          "
+        >
+          <h4 style="text-align: center">
+            You required to reset password.
+          </h4>
+          <hr style="border: 1px solid #1677ff; border-radius: 1px" />
+          <br />
+          <div style="display: flex; justify-content: center">
+            <div>
+              Click
+              <a
+                href="${getFrontendPath() + 'reset-password/' + token}"
+                style="
+                  padding: 8px;
+                  background-color: #1677ff;
+                  color: white;
+                  border-radius: 8px;
+                  text-decoration: none;
+                "
+                >HERE</a
+              >.
+            </div>
+          </div>
+        </div>
+      </div>`,
     });
 };
 

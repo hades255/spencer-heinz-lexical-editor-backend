@@ -60,6 +60,7 @@ const googleOAuth2Routes = (fastify, options, done) => {
                 _user.mobilePhone = '0';
                 _user.workPhone = '0';
                 _user.password = 'Welcome123.!@#';
+                _user.setting.loginMethod = 'google';
                 await _user.save();
                 const token = createAuthToken(_user);
                 return reply.send({

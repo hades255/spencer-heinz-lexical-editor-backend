@@ -37,6 +37,8 @@ import { getDocNameByYDoc } from './shared/helpers.js';
 import { registerGoogleOAuth2Provider } from './shared/oauth2.js';
 import systemRouter from './routes/system.js';
 import { getFrontendPath } from './shared/env.js';
+import taskRouter from './routes/task.js';
+import homeRouter from './routes/home.js';
 
 export const Persistence = new LeveldbPersistence('./storage-location');
 
@@ -204,9 +206,31 @@ fastify.register(documentRouter, { prefix: '/document' });
 fastify.register(notificationRouter, { prefix: '/notification' });
 fastify.register(messageRouter, { prefix: '/message' });
 fastify.register(usersRoom, { prefix: '/userrooms' });
+fastify.register(taskRouter, { prefix: '/task' });
+fastify.register(homeRouter, { prefix: '/home' });
 
 fastify.get('/', (req, res) => {
     res.redirect(getFrontendPath());
+});
+
+fastify.get('/doc/:docName', async (req, res) => {
+    try {
+        const { docName } = req.params;
+        const ydocPersisted = await Persistence.getYDoc(docName);
+        const yxmlTextPersisted = ydocPersisted.get('root', Y.XmlElement);
+        yxmlTextPersisted?.forEach((item, k) => {
+            if (k === 0)
+                console.log(
+                    k,
+                    item.toDelta()[2].insert._map.get('__comments').content.arr,
+                );
+        });
+        // console.log(yxmlTextPersisted);
+        res.send({ doc: yxmlTextPersisted });
+    } catch (error) {
+        console.log(error);
+        res.code(500).send(error);
+    }
 });
 
 const startApp = async () => {
