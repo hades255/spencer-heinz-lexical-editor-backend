@@ -47,6 +47,7 @@ const TaskSchema = new Schema(
             ref: 'Document',
         },
         replies: [ReplySchema],
+        status: { type: String, default: 'assign' }, //  review
     },
     { timestamps: true },
 );

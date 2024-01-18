@@ -114,12 +114,14 @@ export const sendEmail = async ({ ...mail }) => {
     }
 };
 
-export const sendChangedRoleEmail = (to, role) => {
-    sendEmail({
-        from: process.env.SERVER_MAIL_ADDRESS,
-        to: to.email,
-        subject: `Your role has been set as ${role}.`,
-        html: `
+export const sendChangedRoleEmail = async (to, role) => {
+    try {
+        const frontend = await getFrontendPath();
+        sendEmail({
+            from: process.env.SERVER_MAIL_ADDRESS,
+            to: to.email,
+            subject: `Your role has been set as ${role}.`,
+            html: `
         <div style="display: flex; justify-content: center">
           <div
             style="
@@ -141,7 +143,7 @@ export const sendChangedRoleEmail = (to, role) => {
               <div>
                 Click
                 <a
-                  href="${getFrontendPath()}"
+                  href="${frontend}"
                   style="
                     padding: 8px;
                     background-color: #1677ff;
@@ -156,15 +158,20 @@ export const sendChangedRoleEmail = (to, role) => {
             </div>
           </div>
         </div>`,
-    });
+        });
+    } catch (error) {
+        console.log(error);
+    }
 };
 
-export const sendInvitationEmailToExist = (from, to, doc) => {
-    sendEmail({
-        from: process.env.SERVER_MAIL_ADDRESS,
-        to: to.email,
-        subject: `${from.name} invited you to his document.`,
-        html: `
+export const sendInvitationEmailToExist = async (from, to, doc) => {
+    try {
+        const frontend = await getFrontendPath();
+        sendEmail({
+            from: process.env.SERVER_MAIL_ADDRESS,
+            to: to.email,
+            subject: `${from.name} invited you to his document.`,
+            html: `
       <div style="display: flex; justify-content: center">
         <div
           style="
@@ -196,9 +203,7 @@ export const sendInvitationEmailToExist = (from, to, doc) => {
             <div>
               Click
               <a
-                href="${getFrontendPath()}/document/${doc._id}?email=${
-                    to.email
-                }"
+                href="${frontend}/document/${doc._id}?email=${to.email}"
                 style="
                   padding: 8px;
                   background-color: #1677ff;
@@ -213,14 +218,19 @@ export const sendInvitationEmailToExist = (from, to, doc) => {
           </div>
         </div>
       </div>`,
-    });
+        });
+    } catch (error) {
+        console.log(error);
+    }
 };
-export const sendInvitationEmailToNew = (from, to, doc, token) => {
-    sendEmail({
-        from: process.env.SERVER_MAIL_ADDRESS,
-        to: to.email,
-        subject: `${from.name} invited you to his document.`,
-        html: `<div style="display: flex; justify-content: center">
+export const sendInvitationEmailToNew = async (from, to, doc, token) => {
+    try {
+        const frontend = await getFrontendPath();
+        sendEmail({
+            from: process.env.SERVER_MAIL_ADDRESS,
+            to: to.email,
+            subject: `${from.name} invited you to his document.`,
+            html: `<div style="display: flex; justify-content: center">
       <div
         style="
           width: 100%;
@@ -251,7 +261,7 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
           <div>
             Click
             <a
-              href="${getFrontendPath()}/invite/${token}"
+              href="${frontend}/invite/${token}"
               style="
                 padding: 8px;
                 background-color: #1677ff;
@@ -266,14 +276,19 @@ export const sendInvitationEmailToNew = (from, to, doc, token) => {
         </div>
       </div>
     </div>`,
-    });
+        });
+    } catch (error) {
+        console.log(error);
+    }
 };
-export const sendInvitationEmailToUser = (from, to, doc) => {
-    sendEmail({
-        from: process.env.SERVER_MAIL_ADDRESS,
-        to: to.email,
-        subject: `${from.name} invited you to his document.`,
-        html: `<div style="display: flex; justify-content: center">
+export const sendInvitationEmailToUser = async (from, to, doc) => {
+    try {
+        const frontend = await getFrontendPath();
+        sendEmail({
+            from: process.env.SERVER_MAIL_ADDRESS,
+            to: to.email,
+            subject: `${from.name} invited you to his document.`,
+            html: `<div style="display: flex; justify-content: center">
       <div
         style="
           width: 100%;
@@ -306,10 +321,8 @@ export const sendInvitationEmailToUser = (from, to, doc) => {
             <a
               href="${
                   to.status === 'invited'
-                      ? `${getFrontendPath()}/invite/${token}`
-                      : `${getFrontendPath()}/document/${doc._id}?email=${
-                            to.email
-                        }`
+                      ? `${frontend}/invite/${token}`
+                      : `${frontend}/document/${doc._id}?email=${to.email}`
               }"
               style="
                 padding: 8px;
@@ -325,7 +338,10 @@ export const sendInvitationEmailToUser = (from, to, doc) => {
         </div>
       </div>
     </div>`,
-    });
+        });
+    } catch (error) {
+        console.log(error);
+    }
 };
 export const sendInvitationToMail = (user, doc, emails, url) => {
     sendEmail({
@@ -374,12 +390,14 @@ export const sendInvitationToMail = (user, doc, emails, url) => {
     });
 };
 
-export const sendPasswordResetEmail = (to, token) => {
-    sendEmail({
-        from: process.env.SERVER_MAIL_ADDRESS,
-        to: to.email,
-        subject: `Reset Password.`,
-        html: `
+export const sendPasswordResetEmail = async (to, token) => {
+    try {
+        const frontend = await getFrontendPath();
+        sendEmail({
+            from: process.env.SERVER_MAIL_ADDRESS,
+            to: to.email,
+            subject: `Reset Password.`,
+            html: `
       <div style="display: flex; justify-content: center">
         <div
           style="
@@ -400,7 +418,7 @@ export const sendPasswordResetEmail = (to, token) => {
             <div>
               Click
               <a
-                href="${getFrontendPath() + 'reset-password/' + token}"
+                href="${frontend + 'reset-password/' + token}"
                 style="
                   padding: 8px;
                   background-color: #1677ff;
@@ -414,7 +432,10 @@ export const sendPasswordResetEmail = (to, token) => {
           </div>
         </div>
       </div>`,
-    });
+        });
+    } catch (error) {
+        console.log(error);
+    }
 };
 
 export const findCommonElementsByKey = (arr1, arr2, key = '_id') => {

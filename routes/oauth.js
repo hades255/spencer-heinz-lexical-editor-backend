@@ -6,17 +6,18 @@ import { createAuthToken } from '../shared/helpers.js';
 const googleOAuth2Routes = (fastify, options, done) => {
     fastify.get('/google/callback', async function (request, reply) {
         try {
+            const frontend = await getFrontendPath();
             const { token } =
                 await fastify.GoogleOAuth2.getAccessTokenFromAuthorizationCodeFlow(
                     request,
                 );
 
             reply.redirect(
-                getFrontendPath() + 'oauth?access_token=' + token.access_token,
+                frontend + 'oauth?access_token=' + token.access_token,
             );
         } catch (error) {
             console.log(error);
-            reply.redirect(getFrontendPath());
+            reply.redirect(frontend);
         }
     });
     fastify.post('/login', async function (request, reply) {
@@ -34,7 +35,11 @@ const googleOAuth2Routes = (fastify, options, done) => {
             const user = await UserModel.findOne({ email: userInfo.email });
 
             if (user) {
-                if (user.status !== 'active') {
+                if (user.status === USER_STATUS.INVITED) {
+                    user.status = USER_STATUS.ACTIVE;
+                    user.setting.loginMethod = 'google';
+                }
+                if (user.status !== USER_STATUS.ACTIVE) {
                     return reply.send({
                         code: HTTP_RES_CODE.ERROR,
                         data: { status: user.status },

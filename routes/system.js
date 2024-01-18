@@ -4,11 +4,12 @@ import { getDBPath, getFrontendPath, setFrontendPath } from '../shared/env.js';
 const systemRouter = (fastify, opts, done) => {
     fastify.get('/env', async (request, reply) => {
         try {
+            const frontend = await getFrontendPath();
             return reply.send({
                 code: HTTP_RES_CODE.ERROR,
                 data: {
                     dbpath: getDBPath(),
-                    frontend: getFrontendPath(),
+                    frontend,
                 },
                 message: 'OK',
             });
@@ -25,8 +26,8 @@ const systemRouter = (fastify, opts, done) => {
     fastify.post('/env', async (request, reply) => {
         try {
             const data = request.body;
-            if (data.frontend) setFrontendPath(data.frontend);
-            if (data.dbpath) setDBPath(data.dbpath);
+            if (data.frontend) await setFrontendPath(data.frontend);
+            // if (data.dbpath) setDBPath(data.dbpath);
             return reply.send({
                 code: HTTP_RES_CODE.ERROR,
                 message: 'OK',

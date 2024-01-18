@@ -27,6 +27,11 @@ const homeRouter = (fastify, opts, done) => {
                                     ),
                                 },
                             },
+                            {
+                                $match: {
+                                    status: { $not: { $eq: 'complete' } },
+                                },
+                            },
                             { $group: { _id: '$doc' } },
                         ]);
                         docs = await DocumentModel.find({
@@ -41,6 +46,11 @@ const homeRouter = (fastify, opts, done) => {
                                     commentor: new mongoose.Types.ObjectId(
                                         request.user._id,
                                     ),
+                                },
+                            },
+                            {
+                                $match: {
+                                    status: { $not: { $eq: 'complete' } },
                                 },
                             },
                             { $group: { _id: '$doc' } },
@@ -58,7 +68,7 @@ const homeRouter = (fastify, opts, done) => {
                                 docs: docs.filter((item) =>
                                     item.invites.find(
                                         (contributor) =>
-                                            contributor.invitor.toString() ===
+                                            contributor._id.toString() ===
                                             request.user._id.toString(),
                                     ),
                                 ),
@@ -68,7 +78,7 @@ const homeRouter = (fastify, opts, done) => {
                                 docs: docs.filter((item) =>
                                     item.invites.find(
                                         (contributor) =>
-                                            contributor._id.toString() ===
+                                            contributor.invitor.toString() ===
                                             request.user._id.toString(),
                                     ),
                                 ),
@@ -95,6 +105,23 @@ const homeRouter = (fastify, opts, done) => {
                                 ),
                             },
                         ];
+                        break;
+                    case 'reviews':
+                        docIds = await TaskModel.aggregate([
+                            {
+                                $match: {
+                                    commentor: new mongoose.Types.ObjectId(
+                                        request.user._id,
+                                    ),
+                                },
+                            },
+                            { $match: { status: 'review' } },
+                            { $group: { _id: '$doc' } },
+                        ]);
+                        docs = await DocumentModel.find({
+                            _id: { $in: docIds },
+                        });
+                        data = [{ docs }];
                         break;
                     default:
                         break;
@@ -123,11 +150,17 @@ const homeRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
-                const tasks = await TaskModel.find({
+                const tasks = await TaskModel.countDocuments({
                     assignee: new mongoose.Types.ObjectId(request.user._id),
+                    status: { $not: { $eq: 'complete' } },
                 });
-                const asks = await TaskModel.find({
+                const reviews = await TaskModel.countDocuments({
                     commentor: new mongoose.Types.ObjectId(request.user._id),
+                    status: 'review',
+                });
+                const asks = await TaskModel.countDocuments({
+                    commentor: new mongoose.Types.ObjectId(request.user._id),
+                    status: { $not: { $eq: 'complete' } },
                 });
                 const docs = await DocumentModel.find({});
                 const myDocs = docs.filter(
@@ -148,8 +181,9 @@ const homeRouter = (fastify, opts, done) => {
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {
-                        tasks: tasks.length,
-                        asks: asks.length,
+                        tasks: tasks,
+                        asks: asks,
+                        reviews: reviews,
                         myDocs: myDocs.length,
                         editDocs: editDocs.length,
                     },
@@ -166,7 +200,7 @@ const homeRouter = (fastify, opts, done) => {
         },
     );
     fastify.get(
-        '/documents/:docId/tasks',
+        '/documents/:docId/tasks/:type',
         {
             preValidation: fastifyPassport.authenticate('protected', {
                 session: false,
@@ -174,13 +208,18 @@ const homeRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
-                const { docId } = request.params;
+                const { docId, type } = request.params;
                 const tasks = await TaskModel.find({
                     doc: docId,
-                    $or: [
-                        { assignee: request.user._id },
-                        { commentor: request.user._id },
-                    ],
+                    $or:
+                        type === 'asks'
+                            ? [{ commentor: request.user._id }]
+                            : type === 'tasks'
+                            ? [{ assignee: request.user._id }]
+                            : [
+                                  { assignee: request.user._id },
+                                  { commentor: request.user._id },
+                              ],
                 })
                     .populate({ path: 'commentor', select: 'name' })
                     .populate({ path: 'assignee', select: 'name' });

@@ -1,3 +1,5 @@
+import CoreModel from '../models/Core.js';
+
 let dbPath = '';
 let frontend = '';
 let backend = '';
@@ -7,10 +9,39 @@ export const setDBPath = (val) => {
 };
 export const getDBPath = () => dbPath;
 
-export const setFrontendPath = (val) => {
-    frontend = val;
+export const setFrontendPath = async (val) => {
+    try {
+        frontend = val;
+        const coreVal = await CoreModel.findOne({ key: 'frontend' });
+        await CoreModel.findOneAndUpdate(
+            { key: 'frontend' },
+            {
+                value: val,
+                changelog: coreVal
+                    ? [...coreVal.changelog, new Date().toString()]
+                    : [new Date().toString()],
+            },
+            { upsert: true, new: true },
+        );
+        return true;
+    } catch (error) {
+        console.log(error);
+        return null;
+    }
 };
-export const getFrontendPath = () => frontend;
+export const getFrontendPath = async () => {
+    try {
+        const val = await CoreModel.findOne({ key: 'frontend' });
+        if (val) return val.value;
+        else {
+            await CoreModel.create({ key: 'frontend', value: frontend });
+            return frontend;
+        }
+    } catch (error) {
+        console.log(error);
+        return frontend;
+    }
+};
 
 export const initEnv = () => {
     dbPath =

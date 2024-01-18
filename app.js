@@ -209,8 +209,13 @@ fastify.register(usersRoom, { prefix: '/userrooms' });
 fastify.register(taskRouter, { prefix: '/task' });
 fastify.register(homeRouter, { prefix: '/home' });
 
-fastify.get('/', (req, res) => {
-    res.redirect(getFrontendPath());
+fastify.get('/', async (req, res) => {
+    try {
+        res.redirect(await getFrontendPath());
+    } catch (error) {
+        console.log(error);
+        res.code(500).send(error);
+    }
 });
 
 fastify.get('/doc/:docName', async (req, res) => {
@@ -218,13 +223,13 @@ fastify.get('/doc/:docName', async (req, res) => {
         const { docName } = req.params;
         const ydocPersisted = await Persistence.getYDoc(docName);
         const yxmlTextPersisted = ydocPersisted.get('root', Y.XmlElement);
-        yxmlTextPersisted?.forEach((item, k) => {
-            if (k === 0)
-                console.log(
-                    k,
-                    item.toDelta()[2].insert._map.get('__comments').content.arr,
-                );
-        });
+        // yxmlTextPersisted?.forEach((item, k) => {
+        //     if (k === 0)
+        //         console.log(
+        //             k,
+        //             item.toDelta()[2].insert._map.get('__comments').content.arr,
+        //         );
+        // });
         // console.log(yxmlTextPersisted);
         res.send({ doc: yxmlTextPersisted });
     } catch (error) {

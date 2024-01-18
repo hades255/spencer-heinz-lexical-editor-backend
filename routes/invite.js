@@ -36,6 +36,7 @@ const inviteRouter = (fastify, opts, done) => {
         try {
             const { token } = request.query;
             const data = decodeUrl(token);
+            console.log(data)
             const creator = await UserModel.findById(data.f);
             const document = await DocumentModel.findById(data.d);
             const me = document.invites.find((item) => item._id === data.t);

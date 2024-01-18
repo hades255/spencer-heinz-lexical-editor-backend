@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 import jwt from 'jsonwebtoken';
-import { YjsServer, fastifyPassport } from '../app.js';
+import { Persistence, YjsServer, fastifyPassport } from '../app.js';
 import DocumentModel from '../models/Document.js';
 import { HTTP_RES_CODE } from '../shared/constants.js';
 import { JWT_SECRET_KEY } from '../conf.js';
@@ -16,6 +16,7 @@ import {
     setInvite,
     update,
 } from '../controllers/document.js';
+import TaskModel from '../models/Task.js';
 
 const documentRouter = (fastify, opts, done) => {
     /**
@@ -215,9 +216,11 @@ const documentRouter = (fastify, opts, done) => {
         async (request, reply) => {
             try {
                 const { uniqueId } = request.params;
+                await Persistence.clearDocument(uniqueId);
                 const document = await DocumentModel.findByIdAndRemove(
                     uniqueId,
                 );
+                await TaskModel.deleteMany({ doc: uniqueId });
 
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
