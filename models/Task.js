@@ -2,9 +2,13 @@ import mongoose from 'mongoose';
 
 const Schema = mongoose.Schema;
 
-const ReplySchema = new Schema(
+export const ReplySchema = new Schema(
     {
         replier: {
+            type: String,
+            required: true,
+        },
+        name: {
             type: String,
             required: true,
         },
@@ -30,6 +34,14 @@ const TaskSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
         },
+        cname: {
+            type: String,
+            default: '',
+        },
+        aname: {
+            type: String,
+            default: '',
+        },
         comment: {
             type: String,
             default: '',
@@ -47,7 +59,17 @@ const TaskSchema = new Schema(
             ref: 'Document',
         },
         replies: [ReplySchema],
-        status: { type: String, default: 'assign' }, //  review
+        status: { type: String, default: 'assign' }, //  review, completed
+        lastActivity: {
+            who: {
+                type: String,
+                default: '',
+            },
+            what: {
+                type: String,
+                default: '',
+            },
+        },
     },
     { timestamps: true },
 );

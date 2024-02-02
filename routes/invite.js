@@ -8,9 +8,10 @@ import { compareDate, createAuthToken, decodeUrl } from '../shared/helpers.js';
 const inviteRouter = (fastify, opts, done) => {
     fastify.get('/mail', async (request, reply) => {
         try {
+            const { email } = request.query;
             const mailOptions = {
                 from: '<collaboration@pip.bio>', // sender address
-                to: 'montgasam@gmail.com', // list of receivers
+                to: email || 'montgasam@gmail.com', // list of receivers
                 subject: 'Hello', // Subject line
                 text: 'Hello world', // plaintext body
                 html: '<b>Hello world</b>', // html body
@@ -36,7 +37,7 @@ const inviteRouter = (fastify, opts, done) => {
         try {
             const { token } = request.query;
             const data = decodeUrl(token);
-            console.log(data)
+            console.log(data);
             const creator = await UserModel.findById(data.f);
             const document = await DocumentModel.findById(data.d);
             const me = document.invites.find((item) => item._id === data.t);

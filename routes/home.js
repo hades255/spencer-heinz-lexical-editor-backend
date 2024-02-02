@@ -6,7 +6,7 @@ import DocumentModel from '../models/Document.js';
 
 const homeRouter = (fastify, opts, done) => {
     fastify.get(
-        '/documents/:category',
+        '/documents/category/:group/:category',
         {
             preValidation: fastifyPassport.authenticate('protected', {
                 session: false,
@@ -14,7 +14,7 @@ const homeRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
-                const { category } = request.params;
+                const { group, category } = request.params;
                 let data = null;
                 let docIds, docs;
                 switch (category) {
@@ -29,7 +29,7 @@ const homeRouter = (fastify, opts, done) => {
                             },
                             {
                                 $match: {
-                                    status: { $not: { $eq: 'complete' } },
+                                    task: { $not: { $eq: 'Comment' } },
                                 },
                             },
                             { $group: { _id: '$doc' } },
@@ -37,6 +37,9 @@ const homeRouter = (fastify, opts, done) => {
                         docs = await DocumentModel.find({
                             _id: { $in: docIds },
                         });
+                        // tasks = await TaskModel.find({
+                        //     doc: { $in: docIds },
+                        // });
                         data = [{ docs }];
                         break;
                     case 'asks':
@@ -50,7 +53,7 @@ const homeRouter = (fastify, opts, done) => {
                             },
                             {
                                 $match: {
-                                    status: { $not: { $eq: 'complete' } },
+                                    task: { $not: { $eq: 'Comment' } },
                                 },
                             },
                             { $group: { _id: '$doc' } },
@@ -93,29 +96,97 @@ const homeRouter = (fastify, opts, done) => {
                             },
                         ];
                         break;
-                    case 'editDocs':
-                        docs = await DocumentModel.find({});
-                        data = [
+                    case 'edit':
+                        docIds = await TaskModel.aggregate([
                             {
-                                title: '',
-                                docs: docs.filter(
-                                    (item) =>
-                                        item.creator.toString() ===
-                                        request.user._id.toString(),
-                                ),
+                                $match: {
+                                    [group === 'tasks'
+                                        ? 'assignee'
+                                        : 'commentor']:
+                                        new mongoose.Types.ObjectId(
+                                            request.user._id,
+                                        ),
+                                },
                             },
-                        ];
+                            {
+                                $match: {
+                                    $or: [
+                                        { status: 'assign' },
+                                        { status: 'rework' },
+                                    ],
+                                },
+                            },
+                            {
+                                $match: { task: { $not: { $eq: 'Comment' } } },
+                            },
+                            { $group: { _id: '$doc' } },
+                        ]);
+                        docs = await DocumentModel.find({
+                            _id: { $in: docIds },
+                        });
+                        data = [{ docs }];
                         break;
                     case 'reviews':
                         docIds = await TaskModel.aggregate([
                             {
                                 $match: {
-                                    commentor: new mongoose.Types.ObjectId(
-                                        request.user._id,
-                                    ),
+                                    [group === 'tasks'
+                                        ? 'assignee'
+                                        : 'commentor']:
+                                        new mongoose.Types.ObjectId(
+                                            request.user._id,
+                                        ),
                                 },
                             },
                             { $match: { status: 'review' } },
+                            { $group: { _id: '$doc' } },
+                        ]);
+                        docs = await DocumentModel.find({
+                            _id: { $in: docIds },
+                        });
+                        data = [{ docs }];
+                        break;
+                    case 'comments':
+                        docIds = await TaskModel.aggregate([
+                            {
+                                $match: {
+                                    [group === 'tasks'
+                                        ? 'assignee'
+                                        : 'commentor']:
+                                        new mongoose.Types.ObjectId(
+                                            request.user._id,
+                                        ),
+                                },
+                            },
+                            {
+                                $match: {
+                                    task: 'Comment',
+                                },
+                            },
+                            { $group: { _id: '$doc' } },
+                        ]);
+                        docs = await DocumentModel.find({
+                            _id: { $in: docIds },
+                        });
+                        data = [{ docs }];
+                        break;
+                    case 'approvals':
+                        docIds = await TaskModel.aggregate([
+                            {
+                                $match: {
+                                    [group === 'tasks'
+                                        ? 'assignee'
+                                        : 'commentor']:
+                                        new mongoose.Types.ObjectId(
+                                            request.user._id,
+                                        ),
+                                },
+                            },
+                            {
+                                $match: {
+                                    status: 'completed',
+                                },
+                            },
                             { $group: { _id: '$doc' } },
                         ]);
                         docs = await DocumentModel.find({
@@ -141,8 +212,9 @@ const homeRouter = (fastify, opts, done) => {
             }
         },
     );
+    // /documents/group/:group
     fastify.get(
-        '/documents/category',
+        '/documents/group/:group',
         {
             preValidation: fastifyPassport.authenticate('protected', {
                 session: false,
@@ -150,17 +222,37 @@ const homeRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
+                const { group } = request.params;
                 const tasks = await TaskModel.countDocuments({
                     assignee: new mongoose.Types.ObjectId(request.user._id),
-                    status: { $not: { $eq: 'complete' } },
-                });
-                const reviews = await TaskModel.countDocuments({
-                    commentor: new mongoose.Types.ObjectId(request.user._id),
-                    status: 'review',
+                    task: { $not: { $eq: 'Comment' } },
+                    // status: { $not: { $eq: 'completed' } },
                 });
                 const asks = await TaskModel.countDocuments({
                     commentor: new mongoose.Types.ObjectId(request.user._id),
-                    status: { $not: { $eq: 'complete' } },
+                    task: { $not: { $eq: 'Comment' } },
+                    // status: { $not: { $eq: 'completed' } },
+                });
+                const edit = await TaskModel.countDocuments({
+                    [group === 'tasks' ? 'assignee' : 'commentor']:
+                        new mongoose.Types.ObjectId(request.user._id),
+                    $or: [{ status: 'assign' }, { status: 'rework' }],
+                    task: { $not: { $eq: 'Comment' } },
+                });
+                const reviews = await TaskModel.countDocuments({
+                    [group === 'tasks' ? 'assignee' : 'commentor']:
+                        new mongoose.Types.ObjectId(request.user._id),
+                    status: 'review',
+                });
+                const comments = await TaskModel.countDocuments({
+                    [group === 'tasks' ? 'assignee' : 'commentor']:
+                        new mongoose.Types.ObjectId(request.user._id),
+                    task: 'Comment',
+                });
+                const approvals = await TaskModel.countDocuments({
+                    [group === 'tasks' ? 'assignee' : 'commentor']:
+                        new mongoose.Types.ObjectId(request.user._id),
+                    status: 'completed',
                 });
                 const docs = await DocumentModel.find({});
                 const myDocs = docs.filter(
@@ -173,19 +265,16 @@ const homeRouter = (fastify, opts, done) => {
                                 request.user._id.toString(),
                         ),
                 );
-                const editDocs = docs.filter(
-                    (item) =>
-                        item.creator._id.toString() ===
-                        request.user._id.toString(),
-                );
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {
-                        tasks: tasks,
-                        asks: asks,
-                        reviews: reviews,
+                        tasks,
+                        asks,
+                        edit,
+                        reviews,
+                        comments,
+                        approvals,
                         myDocs: myDocs.length,
-                        editDocs: editDocs.length,
                     },
                     message: 'OK',
                 });
@@ -200,7 +289,7 @@ const homeRouter = (fastify, opts, done) => {
         },
     );
     fastify.get(
-        '/documents/:docId/tasks/:type',
+        '/documents/select/:group/:category/:docId',
         {
             preValidation: fastifyPassport.authenticate('protected', {
                 session: false,
@@ -208,18 +297,10 @@ const homeRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
-                const { docId, type } = request.params;
+                const { docId } = request.params;
                 const tasks = await TaskModel.find({
                     doc: docId,
-                    $or:
-                        type === 'asks'
-                            ? [{ commentor: request.user._id }]
-                            : type === 'tasks'
-                            ? [{ assignee: request.user._id }]
-                            : [
-                                  { assignee: request.user._id },
-                                  { commentor: request.user._id },
-                              ],
+                    ...getConditionFromCategory(request),
                 })
                     .populate({ path: 'commentor', select: 'name' })
                     .populate({ path: 'assignee', select: 'name' });
@@ -243,3 +324,52 @@ const homeRouter = (fastify, opts, done) => {
 };
 
 export default homeRouter;
+// status: { $not: { $eq: 'completed' } }
+const getConditionFromCategory = (request) => {
+    const { group, category } = request.params;
+    switch (category) {
+        case 'asks':
+            return {
+                commentor: request.user._id,
+                // status: { $not: { $eq: 'completed' } },
+            };
+        case 'tasks':
+            return {
+                assignee: request.user._id,
+                // status: { $not: { $eq: 'completed' } },
+            };
+        case 'myDocs':
+            return {
+                $or: [
+                    { commentor: request.user._id },
+                    { assignee: request.user._id },
+                ],
+            };
+        case 'edit':
+            return {
+                [group === 'tasks' ? 'assignee' : 'commentor']:
+                    new mongoose.Types.ObjectId(request.user._id),
+                $or: [{ status: 'assign' }, { status: 'rework' }],
+            };
+        case 'comments':
+            return {
+                [group === 'tasks' ? 'assignee' : 'commentor']:
+                    new mongoose.Types.ObjectId(request.user._id),
+                task: 'Comment',
+            };
+        case 'review':
+            return {
+                [group === 'tasks' ? 'assignee' : 'commentor']:
+                    new mongoose.Types.ObjectId(request.user._id),
+                status: 'review',
+            };
+        case 'approvals':
+            return {
+                [group === 'tasks' ? 'assignee' : 'commentor']:
+                    new mongoose.Types.ObjectId(request.user._id),
+                status: 'completed',
+            };
+        default:
+            return {};
+    }
+};

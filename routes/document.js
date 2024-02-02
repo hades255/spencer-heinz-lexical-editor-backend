@@ -118,24 +118,32 @@ const documentRouter = (fastify, opts, done) => {
         },
         async (request, reply) => {
             try {
-                const documents = await DocumentModel.find({})
+                const allDocuments = await DocumentModel.find({})
                     .populate(['creator'])
                     // .sort({ updatedAt: -1 })
                     .exec();
 
+                let documents = allDocuments.filter(
+                    (item) =>
+                        item.creator._id.toString() ===
+                            request.user._id.toString() ||
+                        item.invites.find(
+                            (contributor) =>
+                                contributor._id.toString() ===
+                                request.user._id.toString(),
+                        ),
+                );
+                let tasks = await TaskModel.find({
+                    doc: { $in: documents.map((item) => item._id) },
+                })
+                    .select('updatedAt commentor replies')
+                    .populate({ path: 'commentor', select: 'name' })
+                    .sort({ updatedAt: -1 });
+
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {
-                        documents: documents.filter(
-                            (item) =>
-                                item.creator._id.toString() ===
-                                    request.user._id.toString() ||
-                                item.invites.find(
-                                    (contributor) =>
-                                        contributor._id.toString() ===
-                                        request.user._id.toString(),
-                                ),
-                        ),
+                        documents,
                     },
                     message: '',
                 });
