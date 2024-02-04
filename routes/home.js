@@ -16,7 +16,7 @@ const homeRouter = (fastify, opts, done) => {
             try {
                 const { group, category } = request.params;
                 let data = null;
-                let docIds, docs;
+                let docIds, docs, tasks, asks;
                 switch (category) {
                     case 'tasks':
                         docIds = await TaskModel.aggregate([
@@ -64,27 +64,65 @@ const homeRouter = (fastify, opts, done) => {
                         data = [{ docs }];
                         break;
                     case 'myDocs':
+                        docIds = await TaskModel.aggregate([
+                            {
+                                $match: {
+                                    assignee: new mongoose.Types.ObjectId(
+                                        request.user._id,
+                                    ),
+                                },
+                            },
+                            {
+                                $match: {
+                                    task: { $not: { $eq: 'Comment' } },
+                                },
+                            },
+                            { $group: { _id: '$doc' } },
+                        ]);
+                        tasks = await DocumentModel.find({
+                            _id: { $in: docIds },
+                        });
+                        docIds = await TaskModel.aggregate([
+                            {
+                                $match: {
+                                    commentor: new mongoose.Types.ObjectId(
+                                        request.user._id,
+                                    ),
+                                },
+                            },
+                            {
+                                $match: {
+                                    task: { $not: { $eq: 'Comment' } },
+                                },
+                            },
+                            { $group: { _id: '$doc' } },
+                        ]);
+                        asks = await DocumentModel.find({
+                            _id: { $in: docIds },
+                        });
                         docs = await DocumentModel.find({});
                         data = [
                             {
                                 title: 'Documents where you had made requests of others',
-                                docs: docs.filter((item) =>
-                                    item.invites.find(
-                                        (contributor) =>
-                                            contributor._id.toString() ===
-                                            request.user._id.toString(),
-                                    ),
-                                ),
+                                docs: tasks,
+                                // docs: docs.filter((item) =>
+                                //     item.invites.find(
+                                //         (contributor) =>
+                                //             contributor._id.toString() ===
+                                //             request.user._id.toString(),
+                                //     ),
+                                // ),
                             },
                             {
                                 title: 'Documents where others have made requests of you',
-                                docs: docs.filter((item) =>
-                                    item.invites.find(
-                                        (contributor) =>
-                                            contributor.invitor.toString() ===
-                                            request.user._id.toString(),
-                                    ),
-                                ),
+                                docs: asks,
+                                // docs: docs.filter((item) =>
+                                //     item.invites.find(
+                                //         (contributor) =>
+                                //             contributor.invitor.toString() ===
+                                //             request.user._id.toString(),
+                                //     ),
+                                // ),
                             },
                             {
                                 title: 'Documents you created',
@@ -254,17 +292,30 @@ const homeRouter = (fastify, opts, done) => {
                         new mongoose.Types.ObjectId(request.user._id),
                     status: 'completed',
                 });
-                const docs = await DocumentModel.find({});
-                const myDocs = docs.filter(
-                    (item) =>
-                        item.creator._id.toString() ===
-                            request.user._id.toString() ||
-                        item.invites.find(
-                            (contributor) =>
-                                contributor._id.toString() ===
-                                request.user._id.toString(),
-                        ),
-                );
+                const myDocs = await TaskModel.aggregate([
+                    {
+                        $match: {
+                            $or: [
+                                {
+                                    assignee: new mongoose.Types.ObjectId(
+                                        request.user._id,
+                                    ),
+                                },
+                                {
+                                    commentor: new mongoose.Types.ObjectId(
+                                        request.user._id,
+                                    ),
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $match: {
+                            task: { $not: { $eq: 'Comment' } },
+                        },
+                    },
+                    { $group: { _id: '$doc' } },
+                ]);
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: {
@@ -304,6 +355,7 @@ const homeRouter = (fastify, opts, done) => {
                 })
                     .populate({ path: 'commentor', select: 'name' })
                     .populate({ path: 'assignee', select: 'name' });
+                console.log(tasks.length);
                 return reply.send({
                     code: HTTP_RES_CODE.SUCCESS,
                     data: tasks,
@@ -348,19 +400,19 @@ const getConditionFromCategory = (request) => {
         case 'edit':
             return {
                 [group === 'tasks' ? 'assignee' : 'commentor']:
-                    new mongoose.Types.ObjectId(request.user._id),
+                    request.user._id,
                 $or: [{ status: 'assign' }, { status: 'rework' }],
             };
         case 'comments':
             return {
                 [group === 'tasks' ? 'assignee' : 'commentor']:
-                    new mongoose.Types.ObjectId(request.user._id),
+                    request.user._id,
                 task: 'Comment',
             };
         case 'review':
             return {
                 [group === 'tasks' ? 'assignee' : 'commentor']:
-                    new mongoose.Types.ObjectId(request.user._id),
+                    request.user._id,
                 status: 'review',
             };
         case 'approvals':
